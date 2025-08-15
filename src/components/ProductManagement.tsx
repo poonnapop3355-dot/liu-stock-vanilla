@@ -12,6 +12,53 @@ const ProductManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
+  // Handler functions for button actions
+  const handleImportCSV = () => {
+    // Create file input element for CSV import
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.csv';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        console.log('CSV file selected:', file.name);
+        // TODO: Parse CSV and import to database
+        alert('CSV import functionality requires Supabase connection');
+      }
+    };
+    input.click();
+  };
+
+  const handleExportCSV = () => {
+    // Generate CSV content
+    const headers = ['SKU', 'Name', 'Price', 'Quantity', 'Low Stock Threshold'];
+    const csvContent = [
+      headers.join(','),
+      ...products.map(p => [p.sku, p.name, p.sellingPrice, p.quantity, p.lowStockThreshold].join(','))
+    ].join('\n');
+    
+    // Create download link
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'products.csv';
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  const handleEditProduct = (sku: string) => {
+    console.log('Edit product:', sku);
+    alert(`Edit functionality for ${sku} - requires Supabase connection for full implementation`);
+  };
+
+  const handleDeleteProduct = (sku: string) => {
+    if (confirm(`Are you sure you want to delete product ${sku}?`)) {
+      console.log('Delete product:', sku);
+      alert(`Delete functionality for ${sku} - requires Supabase connection for full implementation`);
+    }
+  };
+
   // Mock data - will be replaced with real data from Supabase
   const products = [
     { 
@@ -70,11 +117,11 @@ const ProductManagement = () => {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <CardTitle className="text-2xl">Product Management</CardTitle>
             <div className="flex flex-wrap gap-2">
-              <Button variant="outline" size="sm" className="gap-2">
+              <Button variant="outline" size="sm" className="gap-2" onClick={handleImportCSV}>
                 <Upload className="h-4 w-4" />
                 Import CSV
               </Button>
-              <Button variant="outline" size="sm" className="gap-2">
+              <Button variant="outline" size="sm" className="gap-2" onClick={handleExportCSV}>
                 <Download className="h-4 w-4" />
                 Export CSV
               </Button>
@@ -167,11 +214,11 @@ const ProductManagement = () => {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button size="sm" variant="outline" className="gap-1">
+                        <Button size="sm" variant="outline" className="gap-1" onClick={() => handleEditProduct(product.sku)}>
                           <Edit className="h-3 w-3" />
                           Edit
                         </Button>
-                        <Button size="sm" variant="outline" className="gap-1 text-destructive hover:text-destructive">
+                        <Button size="sm" variant="outline" className="gap-1 text-destructive hover:text-destructive" onClick={() => handleDeleteProduct(product.sku)}>
                           <Trash2 className="h-3 w-3" />
                           Delete
                         </Button>

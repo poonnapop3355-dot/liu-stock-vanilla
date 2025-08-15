@@ -13,6 +13,113 @@ const SalesManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isCreateSaleOpen, setIsCreateSaleOpen] = useState(false);
 
+  // Handler functions for button actions
+  const handlePrintPackingSlips = () => {
+    console.log('Print packing slips for all sales');
+    
+    // Create print content
+    const printContent = `
+      <html>
+        <head>
+          <title>Packing Slips</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            .slip { page-break-after: always; margin-bottom: 40px; padding: 20px; border: 1px solid #ccc; }
+            .header { text-align: center; font-size: 24px; margin-bottom: 20px; }
+            .info { margin-bottom: 15px; }
+            .items { margin-top: 20px; }
+            table { width: 100%; border-collapse: collapse; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+          </style>
+        </head>
+        <body>
+          ${sales.map(sale => `
+            <div class="slip">
+              <div class="header">Liu Stock - Packing Slip</div>
+              <div class="info"><strong>Sale ID:</strong> ${sale.saleId}</div>
+              <div class="info"><strong>Customer:</strong> ${sale.customer}</div>
+              <div class="info"><strong>Date:</strong> ${new Date(sale.createdAt).toLocaleDateString()}</div>
+              <div class="info"><strong>Shipping Address:</strong><br>${sale.shippingInfo.address}</div>
+              <div class="items">
+                <table>
+                  <tr><th>Product</th><th>Quantity</th><th>Price</th></tr>
+                  ${sale.items.map(item => `
+                    <tr>
+                      <td>${item.name}</td>
+                      <td>${item.quantity}</td>
+                      <td>$${item.priceAtSale}</td>
+                    </tr>
+                  `).join('')}
+                </table>
+                <p><strong>Total: $${sale.totalAmount}</strong></p>
+              </div>
+            </div>
+          `).join('')}
+        </body>
+      </html>
+    `;
+    
+    // Open print window
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+      printWindow.print();
+    }
+  };
+
+  const handleViewSale = (saleId: string) => {
+    const sale = sales.find(s => s.saleId === saleId);
+    if (sale) {
+      alert(`Viewing sale ${saleId}\nCustomer: ${sale.customer}\nTotal: $${sale.totalAmount}\nStatus: ${sale.shippingInfo.status}`);
+    }
+  };
+
+  const handlePrintSingle = (saleId: string) => {
+    const sale = sales.find(s => s.saleId === saleId);
+    if (!sale) return;
+    
+    const printContent = `
+      <html>
+        <head>
+          <title>Packing Slip - ${saleId}</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            .header { text-align: center; font-size: 24px; margin-bottom: 20px; }
+            .info { margin-bottom: 15px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+          </style>
+        </head>
+        <body>
+          <div class="header">Liu Stock - Packing Slip</div>
+          <div class="info"><strong>Sale ID:</strong> ${sale.saleId}</div>
+          <div class="info"><strong>Customer:</strong> ${sale.customer}</div>
+          <div class="info"><strong>Date:</strong> ${new Date(sale.createdAt).toLocaleDateString()}</div>
+          <div class="info"><strong>Shipping Address:</strong><br>${sale.shippingInfo.address}</div>
+          <table>
+            <tr><th>Product</th><th>Quantity</th><th>Price</th></tr>
+            ${sale.items.map(item => `
+              <tr>
+                <td>${item.name}</td>
+                <td>${item.quantity}</td>
+                <td>$${item.priceAtSale}</td>
+              </tr>
+            `).join('')}
+          </table>
+          <p><strong>Total: $${sale.totalAmount}</strong></p>
+        </body>
+      </html>
+    `;
+    
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+      printWindow.print();
+    }
+  };
+
   // Mock data - will be replaced with real data from Supabase
   const sales = [
     {
@@ -83,7 +190,7 @@ const SalesManagement = () => {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <CardTitle className="text-2xl">Sales Management</CardTitle>
             <div className="flex flex-wrap gap-2">
-              <Button variant="outline" size="sm" className="gap-2">
+              <Button variant="outline" size="sm" className="gap-2" onClick={handlePrintPackingSlips}>
                 <Printer className="h-4 w-4" />
                 Print Packing Slips
               </Button>
@@ -214,11 +321,11 @@ const SalesManagement = () => {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button size="sm" variant="outline" className="gap-1">
+                        <Button size="sm" variant="outline" className="gap-1" onClick={() => handleViewSale(sale.saleId)}>
                           <Eye className="h-3 w-3" />
                           View
                         </Button>
-                        <Button size="sm" variant="outline" className="gap-1">
+                        <Button size="sm" variant="outline" className="gap-1" onClick={() => handlePrintSingle(sale.saleId)}>
                           <Printer className="h-3 w-3" />
                           Print
                         </Button>
