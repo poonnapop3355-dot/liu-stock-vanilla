@@ -3,6 +3,7 @@ import Sidebar from "@/components/Sidebar";
 import Dashboard from "@/components/Dashboard";
 import ProductManagement from "@/components/ProductManagement";
 import SalesManagement from "@/components/SalesManagement";
+import POSOrderEntry from "@/components/POSOrderEntry";
 import AuthLogin from "@/components/AuthLogin";
 
 const Index = () => {
@@ -21,6 +22,8 @@ const Index = () => {
         return <ProductManagement />;
       case 'sales':
         return <SalesManagement />;
+      case 'pos':
+        return <POSOrderEntry />;
       case 'users':
         return (
           <div className="flex items-center justify-center h-64">
