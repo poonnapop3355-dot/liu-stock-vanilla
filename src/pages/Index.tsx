@@ -3,7 +3,10 @@ import Sidebar from "@/components/Sidebar";
 import Dashboard from "@/components/Dashboard";
 import ProductManagement from "@/components/ProductManagement";
 import SalesManagement from "@/components/SalesManagement";
-import POSOrderEntry from "@/components/POSOrderEntry";
+import EnhancedPOS from "@/components/EnhancedPOS";
+import OrderManagement from "@/components/OrderManagement";
+import CRMManagement from "@/components/CRMManagement";
+import PrintLabel from "@/components/PrintLabel";
 import AuthLogin from "@/components/AuthLogin";
 
 const Index = () => {
@@ -23,7 +26,13 @@ const Index = () => {
       case 'sales':
         return <SalesManagement />;
       case 'pos':
-        return <POSOrderEntry />;
+        return <EnhancedPOS />;
+      case 'orders':
+        return <OrderManagement />;
+      case 'crm':
+        return <CRMManagement />;
+      case 'print':
+        return <PrintLabel />;
       case 'users':
         return (
           <div className="flex items-center justify-center h-64">
