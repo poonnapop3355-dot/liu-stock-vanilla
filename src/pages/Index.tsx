@@ -7,6 +7,8 @@ import EnhancedPOS from "@/components/EnhancedPOS";
 import OrderManagement from "@/components/OrderManagement";
 import CRMManagement from "@/components/CRMManagement";
 import PrintLabel from "@/components/PrintLabel";
+import UserManagement from "@/components/UserManagement";
+import Settings from "@/components/Settings";
 import AuthLogin from "@/components/AuthLogin";
 
 const Index = () => {
@@ -34,17 +36,9 @@ const Index = () => {
       case 'print':
         return <PrintLabel />;
       case 'users':
-        return (
-          <div className="flex items-center justify-center h-64">
-            <p className="text-muted-foreground">User management coming soon...</p>
-          </div>
-        );
+        return <UserManagement />;
       case 'settings':
-        return (
-          <div className="flex items-center justify-center h-64">
-            <p className="text-muted-foreground">Settings coming soon...</p>
-          </div>
-        );
+        return <Settings />;
       default:
         return <Dashboard />;
     }
