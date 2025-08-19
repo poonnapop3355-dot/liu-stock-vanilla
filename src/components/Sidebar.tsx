@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { BarChart3, Package, ShoppingCart, Users, Settings, LogOut, CreditCard, FileText, UserCheck, Printer, BookOpen, TrendingUp } from "lucide-react";
+import { BarChart3, Package, ShoppingCart, Users, Settings, LogOut, CreditCard, FileText, UserCheck, Printer, BookOpen, TrendingUp, HelpCircle } from "lucide-react";
 
 interface SidebarProps {
   activeView: string;
@@ -18,6 +18,7 @@ const Sidebar = ({ activeView, onViewChange }: SidebarProps) => {
     { id: 'crm', label: 'CRM', icon: UserCheck },
     { id: 'print', label: 'Print Labels', icon: Printer },
     { id: 'users', label: 'Users', icon: Users },
+    { id: 'guide', label: 'How to Use', icon: HelpCircle },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
 

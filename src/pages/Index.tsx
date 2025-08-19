@@ -12,6 +12,7 @@ import Settings from "@/components/Settings";
 import AuthLogin from "@/components/AuthLogin";
 import BookManagement from "@/components/BookManagement";
 import BookstorePOS from "@/components/BookstorePOS";
+import UserGuide from "@/components/UserGuide";
 
 const Index = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -43,6 +44,8 @@ const Index = () => {
         return <PrintLabel />;
       case 'users':
         return <UserManagement />;
+      case 'guide':
+        return <UserGuide />;
       case 'settings':
         return <Settings />;
       default:
