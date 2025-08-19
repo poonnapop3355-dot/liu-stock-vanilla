@@ -14,6 +14,144 @@ export type Database = {
   }
   public: {
     Tables: {
+      authors: {
+        Row: {
+          biography: string | null
+          birth_date: string | null
+          created_at: string
+          id: string
+          name: string
+          nationality: string | null
+          website: string | null
+        }
+        Insert: {
+          biography?: string | null
+          birth_date?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          nationality?: string | null
+          website?: string | null
+        }
+        Update: {
+          biography?: string | null
+          birth_date?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          nationality?: string | null
+          website?: string | null
+        }
+        Relationships: []
+      }
+      book_authors: {
+        Row: {
+          author_id: string
+          book_id: string
+        }
+        Insert: {
+          author_id: string
+          book_id: string
+        }
+        Update: {
+          author_id?: string
+          book_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "book_authors_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "authors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "book_authors_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      book_categories: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      books: {
+        Row: {
+          author: string
+          category: string | null
+          cover_image_url: string | null
+          created_at: string
+          description: string | null
+          id: string
+          isbn: string | null
+          language: string | null
+          pages: number | null
+          price: number
+          publication_date: string | null
+          publisher: string | null
+          status: string
+          stock_quantity: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          author: string
+          category?: string | null
+          cover_image_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          isbn?: string | null
+          language?: string | null
+          pages?: number | null
+          price: number
+          publication_date?: string | null
+          publisher?: string | null
+          status?: string
+          stock_quantity?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          author?: string
+          category?: string | null
+          cover_image_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          isbn?: string | null
+          language?: string | null
+          pages?: number | null
+          price?: number
+          publication_date?: string | null
+          publisher?: string | null
+          status?: string
+          stock_quantity?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       customers: {
         Row: {
           address: string | null

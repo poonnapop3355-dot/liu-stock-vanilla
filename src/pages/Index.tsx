@@ -10,6 +10,8 @@ import PrintLabel from "@/components/PrintLabel";
 import UserManagement from "@/components/UserManagement";
 import Settings from "@/components/Settings";
 import AuthLogin from "@/components/AuthLogin";
+import BookManagement from "@/components/BookManagement";
+import BookstorePOS from "@/components/BookstorePOS";
 
 const Index = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -23,6 +25,10 @@ const Index = () => {
     switch (activeView) {
       case 'dashboard':
         return <Dashboard />;
+      case 'books':
+        return <BookManagement />;
+      case 'bookstore-pos':
+        return <BookstorePOS />;
       case 'products':
         return <ProductManagement />;
       case 'sales':
