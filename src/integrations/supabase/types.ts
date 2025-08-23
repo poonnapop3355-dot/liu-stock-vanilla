@@ -350,6 +350,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_authenticated: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       is_authorized_staff: {
         Args: Record<PropertyKey, never>
         Returns: boolean
