@@ -152,6 +152,39 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_access_logs: {
+        Row: {
+          access_type: string
+          accessed_at: string | null
+          accessed_fields: string[] | null
+          customer_id: string | null
+          id: string
+          ip_address: unknown | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          access_type: string
+          accessed_at?: string | null
+          accessed_fields?: string[] | null
+          customer_id?: string | null
+          id?: string
+          ip_address?: unknown | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          access_type?: string
+          accessed_at?: string | null
+          accessed_fields?: string[] | null
+          customer_id?: string | null
+          id?: string
+          ip_address?: unknown | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       customers: {
         Row: {
           address: string | null
@@ -340,7 +373,39 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      customer_secure_view: {
+        Row: {
+          address: string | null
+          created_at: string | null
+          customer_contact: string | null
+          id: string | null
+          name: string | null
+          notes: string | null
+          phone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          address?: never
+          created_at?: string | null
+          customer_contact?: never
+          id?: string | null
+          name?: string | null
+          notes?: string | null
+          phone?: never
+          updated_at?: string | null
+        }
+        Update: {
+          address?: never
+          created_at?: string | null
+          customer_contact?: never
+          id?: string | null
+          name?: string | null
+          notes?: string | null
+          phone?: never
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {
@@ -355,6 +420,18 @@ export type Database = {
         Returns: boolean
       }
       is_authorized_staff: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      log_customer_access: {
+        Args: {
+          p_access_type?: string
+          p_customer_id?: string
+          p_fields?: string[]
+        }
+        Returns: undefined
+      }
+      validate_customer_operation: {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
