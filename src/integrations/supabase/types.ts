@@ -412,23 +412,23 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
-          address?: never
+          address?: string | null
           created_at?: string | null
-          customer_contact?: never
+          customer_contact?: string | null
           id?: string | null
           name?: string | null
           notes?: string | null
-          phone?: never
+          phone?: string | null
           updated_at?: string | null
         }
         Update: {
-          address?: never
+          address?: string | null
           created_at?: string | null
-          customer_contact?: never
+          customer_contact?: string | null
           id?: string | null
           name?: string | null
           notes?: string | null
-          phone?: never
+          phone?: string | null
           updated_at?: string | null
         }
         Relationships: []
