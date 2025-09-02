@@ -80,9 +80,9 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-surface px-4">
+    <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-md">
-        <Card className="shadow-large border-0">
+        <Card className="shadow-large border border-border bg-card">
           <CardHeader className="text-center space-y-4 pb-8">
             <div className="mx-auto w-16 h-16 bg-gradient-hero rounded-2xl flex items-center justify-center shadow-glow">
               <Package className="h-8 w-8 text-white" />

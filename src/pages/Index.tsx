@@ -23,7 +23,7 @@ const Index = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-surface">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
           <p className="text-muted-foreground">Loading...</p>
@@ -72,7 +72,7 @@ const Index = () => {
       <div className="w-64 flex-shrink-0">
         <Sidebar activeView={activeView} onViewChange={setActiveView} />
       </div>
-      <main className="flex-1 p-6 bg-background overflow-auto">
+      <main className="flex-1 p-6 bg-background text-foreground overflow-auto">
         {renderContent()}
       </main>
     </div>

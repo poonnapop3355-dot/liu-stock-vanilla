@@ -79,17 +79,17 @@ const Sidebar = ({ activeView, onViewChange }: SidebarProps) => {
   ];
 
   return (
-    <div className="flex flex-col h-full bg-gradient-surface border-r border-border shadow-medium">
-      <div className="p-6 border-b border-border">
+    <div className="flex flex-col h-full bg-sidebar border-r border-sidebar-border shadow-medium">
+      <div className="p-6 border-b border-sidebar-border">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-gradient-hero rounded-lg flex items-center justify-center">
+          <div className="w-8 h-8 bg-gradient-hero rounded-lg flex items-center justify-center shadow-glow">
             <Package className="h-5 w-5 text-white" />
           </div>
           <div>
             <h1 className="text-xl font-bold bg-gradient-hero bg-clip-text text-transparent">
               Liu Stock
             </h1>
-            <p className="text-xs text-muted-foreground">Inventory Management</p>
+            <p className="text-xs text-sidebar-foreground/70">Inventory Management</p>
           </div>
         </div>
       </div>
@@ -104,10 +104,10 @@ const Sidebar = ({ activeView, onViewChange }: SidebarProps) => {
                   onClick={() => onViewChange(item.id)}
                   className={cn(
                     "w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all duration-200",
-                    "hover:bg-white/60 hover:shadow-soft",
+                    "hover:bg-sidebar-accent hover:shadow-soft",
                     activeView === item.id
                       ? "bg-gradient-primary text-primary-foreground shadow-glow"
-                      : "text-foreground"
+                      : "text-sidebar-foreground"
                   )}
                 >
                   <Icon className="h-5 w-5" />
@@ -119,14 +119,14 @@ const Sidebar = ({ activeView, onViewChange }: SidebarProps) => {
         </ul>
       </nav>
 
-      <div className="p-4 border-t border-border space-y-3">
-        <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-          <div className="w-8 h-8 bg-gradient-primary rounded-full flex items-center justify-center">
+      <div className="p-4 border-t border-sidebar-border space-y-3">
+        <div className="flex items-center gap-3 p-3 rounded-lg bg-sidebar-accent">
+          <div className="w-8 h-8 bg-gradient-primary rounded-full flex items-center justify-center shadow-glow">
             <span className="text-xs font-bold text-primary-foreground">{initials}</span>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">{displayName}</p>
-            <p className="text-xs text-muted-foreground capitalize">{userRole}</p>
+            <p className="text-sm font-medium text-sidebar-foreground truncate">{displayName}</p>
+            <p className="text-xs text-sidebar-foreground/70 capitalize">{userRole}</p>
           </div>
         </div>
         
@@ -134,7 +134,7 @@ const Sidebar = ({ activeView, onViewChange }: SidebarProps) => {
           <ThemeToggle />
           <button 
             onClick={handleLogout}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-colors hover:bg-destructive/10 text-destructive text-sm"
+            className="flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-colors hover:bg-destructive/20 text-destructive text-sm"
           >
             <LogOut className="h-4 w-4" />
             <span className="font-medium">Logout</span>
