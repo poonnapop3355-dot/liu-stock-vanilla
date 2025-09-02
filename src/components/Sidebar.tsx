@@ -1,5 +1,8 @@
 import { cn } from "@/lib/utils";
 import { BarChart3, Package, ShoppingCart, Users, Settings, LogOut, CreditCard, FileText, UserCheck, Printer, BookOpen, TrendingUp, HelpCircle } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface SidebarProps {
   activeView: string;
@@ -7,6 +10,58 @@ interface SidebarProps {
 }
 
 const Sidebar = ({ activeView, onViewChange }: SidebarProps) => {
+  const { user, signOut } = useAuth();
+  const [profile, setProfile] = useState<any>(null);
+  const [userRole, setUserRole] = useState<string>('staff');
+
+  useEffect(() => {
+    if (user) {
+      fetchUserProfile();
+      fetchUserRole();
+    }
+  }, [user]);
+
+  const fetchUserProfile = async () => {
+    if (!user) return;
+    
+    const { data } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single();
+    
+    setProfile(data);
+  };
+
+  const fetchUserRole = async () => {
+    if (!user) return;
+    
+    const { data } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .single();
+    
+    if (data) {
+      setUserRole(data.role);
+    }
+  };
+
+  const handleLogout = async () => {
+    await signOut();
+  };
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(word => word.charAt(0))
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  const displayName = profile?.full_name || user?.email?.split('@')[0] || 'User';
+  const initials = getInitials(displayName);
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
     { id: 'books', label: 'Book Management', icon: BookOpen },
@@ -66,14 +121,17 @@ const Sidebar = ({ activeView, onViewChange }: SidebarProps) => {
       <div className="p-4 border-t border-border">
         <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
           <div className="w-8 h-8 bg-gradient-primary rounded-full flex items-center justify-center">
-            <span className="text-xs font-bold text-primary-foreground">JD</span>
+            <span className="text-xs font-bold text-primary-foreground">{initials}</span>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">John Doe</p>
-            <p className="text-xs text-muted-foreground">Administrator</p>
+            <p className="text-sm font-medium truncate">{displayName}</p>
+            <p className="text-xs text-muted-foreground capitalize">{userRole}</p>
           </div>
         </div>
-        <button className="w-full flex items-center gap-3 px-4 py-3 mt-2 rounded-lg text-left transition-colors hover:bg-destructive/10 text-destructive">
+        <button 
+          onClick={handleLogout}
+          className="w-full flex items-center gap-3 px-4 py-3 mt-2 rounded-lg text-left transition-colors hover:bg-destructive/10 text-destructive"
+        >
           <LogOut className="h-5 w-5" />
           <span className="font-medium">Logout</span>
         </button>
