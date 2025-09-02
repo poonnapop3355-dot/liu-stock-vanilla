@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import RoleGuard from "@/components/RoleGuard";
 import Sidebar from "@/components/Sidebar";
 import Dashboard from "@/components/Dashboard";
 import ProductManagement from "@/components/ProductManagement";
@@ -40,27 +41,27 @@ const Index = () => {
       case 'dashboard':
         return <Dashboard />;
       case 'books':
-        return <BookManagement />;
+        return <RoleGuard requiredRole="staff"><BookManagement /></RoleGuard>;
       case 'bookstore-pos':
-        return <BookstorePOS />;
+        return <RoleGuard requiredRole="staff"><BookstorePOS /></RoleGuard>;
       case 'products':
-        return <ProductManagement />;
+        return <RoleGuard requiredRole="staff"><ProductManagement /></RoleGuard>;
       case 'sales':
-        return <SalesManagement />;
+        return <RoleGuard requiredRole="staff"><SalesManagement /></RoleGuard>;
       case 'pos':
-        return <EnhancedPOS />;
+        return <RoleGuard requiredRole="staff"><EnhancedPOS /></RoleGuard>;
       case 'orders':
-        return <OrderManagement />;
+        return <RoleGuard requiredRole="staff"><OrderManagement /></RoleGuard>;
       case 'crm':
-        return <CRMManagement />;
+        return <RoleGuard requiredRole="staff"><CRMManagement /></RoleGuard>;
       case 'print':
-        return <PrintLabel />;
+        return <RoleGuard requiredRole="staff"><PrintLabel /></RoleGuard>;
       case 'users':
-        return <UserManagement />;
+        return <RoleGuard requiredRole="admin"><UserManagement /></RoleGuard>;
       case 'guide':
         return <UserGuide />;
       case 'settings':
-        return <Settings />;
+        return <RoleGuard requiredRole="staff"><Settings /></RoleGuard>;
       default:
         return <Dashboard />;
     }

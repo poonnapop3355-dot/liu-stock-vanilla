@@ -400,39 +400,7 @@ export type Database = {
       }
     }
     Views: {
-      customer_secure_view: {
-        Row: {
-          address: string | null
-          created_at: string | null
-          customer_contact: string | null
-          id: string | null
-          name: string | null
-          notes: string | null
-          phone: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          address?: string | null
-          created_at?: string | null
-          customer_contact?: string | null
-          id?: string | null
-          name?: string | null
-          notes?: string | null
-          phone?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          address?: string | null
-          created_at?: string | null
-          customer_contact?: string | null
-          id?: string | null
-          name?: string | null
-          notes?: string | null
-          phone?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       create_admin_user: {
