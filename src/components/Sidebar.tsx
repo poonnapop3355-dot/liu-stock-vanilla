@@ -3,6 +3,7 @@ import { BarChart3, Package, ShoppingCart, Users, Settings, LogOut, CreditCard, 
 import { useAuth } from "@/hooks/useAuth";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 interface SidebarProps {
   activeView: string;
@@ -118,7 +119,7 @@ const Sidebar = ({ activeView, onViewChange }: SidebarProps) => {
         </ul>
       </nav>
 
-      <div className="p-4 border-t border-border">
+      <div className="p-4 border-t border-border space-y-3">
         <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
           <div className="w-8 h-8 bg-gradient-primary rounded-full flex items-center justify-center">
             <span className="text-xs font-bold text-primary-foreground">{initials}</span>
@@ -128,13 +129,17 @@ const Sidebar = ({ activeView, onViewChange }: SidebarProps) => {
             <p className="text-xs text-muted-foreground capitalize">{userRole}</p>
           </div>
         </div>
-        <button 
-          onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-4 py-3 mt-2 rounded-lg text-left transition-colors hover:bg-destructive/10 text-destructive"
-        >
-          <LogOut className="h-5 w-5" />
-          <span className="font-medium">Logout</span>
-        </button>
+        
+        <div className="flex items-center justify-between">
+          <ThemeToggle />
+          <button 
+            onClick={handleLogout}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-colors hover:bg-destructive/10 text-destructive text-sm"
+          >
+            <LogOut className="h-4 w-4" />
+            <span className="font-medium">Logout</span>
+          </button>
+        </div>
       </div>
     </div>
   );
