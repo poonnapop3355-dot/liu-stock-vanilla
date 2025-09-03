@@ -166,9 +166,7 @@ const PrintLabel = () => {
   };
 
   const generatePrintView = async () => {
-    const selectedOrdersData = await fetchOrderItems(selectedOrders);
-    
-    if (selectedOrdersData.length === 0) {
+    if (selectedOrders.length === 0) {
       toast({
         title: "No Orders Selected",
         description: "Please select orders to print labels",
@@ -177,9 +175,27 @@ const PrintLabel = () => {
       return;
     }
 
+    const selectedOrdersData = await fetchOrderItems(selectedOrders);
+    
+    if (selectedOrdersData.length === 0) {
+      toast({
+        title: "Error",
+        description: "Failed to fetch order data for printing",
+        variant: "destructive"
+      });
+      return;
+    }
+
     // Create a new window with print styles
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) return;
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    if (!printWindow) {
+      toast({
+        title: "Popup Blocked",
+        description: "Please allow popups for this site to print labels",
+        variant: "destructive"
+      });
+      return;
+    }
 
     const labelsPerRow = 1;
     const labelsPerPage = 2;
