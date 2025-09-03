@@ -17,8 +17,19 @@ interface Order {
   delivery_date: string;
 }
 
+interface OrderItem {
+  order_id: string;
+  product_name: string;
+  quantity: number;
+}
+
+interface OrderWithItems extends Order {
+  items: OrderItem[];
+}
+
 const PrintLabel = () => {
   const [orders, setOrders] = useState<Order[]>([]);
+  const [ordersWithItems, setOrdersWithItems] = useState<OrderWithItems[]>([]);
   const [deliveryRounds, setDeliveryRounds] = useState<string[]>([]);
   const [selectedRound, setSelectedRound] = useState("");
   const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
@@ -126,8 +137,36 @@ const PrintLabel = () => {
     }
   };
 
-  const generatePrintView = () => {
-    const selectedOrdersData = orders.filter(order => selectedOrders.includes(order.id));
+  const fetchOrderItems = async (orderIds: string[]) => {
+    try {
+      const { data, error } = await supabase
+        .from('order_items')
+        .select('order_id, product_name, quantity')
+        .in('order_id', orderIds);
+      
+      if (error) throw error;
+      
+      const ordersWithItems: OrderWithItems[] = orders
+        .filter(order => selectedOrders.includes(order.id))
+        .map(order => ({
+          ...order,
+          items: data?.filter(item => item.order_id === order.id) || []
+        }));
+      
+      setOrdersWithItems(ordersWithItems);
+      return ordersWithItems;
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to fetch order items",
+        variant: "destructive"
+      });
+      return [];
+    }
+  };
+
+  const generatePrintView = async () => {
+    const selectedOrdersData = await fetchOrderItems(selectedOrders);
     
     if (selectedOrdersData.length === 0) {
       toast({
@@ -142,8 +181,8 @@ const PrintLabel = () => {
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
 
-    const labelsPerRow = 2;
-    const labelsPerPage = 6;
+    const labelsPerRow = 1;
+    const labelsPerPage = 2;
     
     const labelStyle = `
       <style>
@@ -165,39 +204,79 @@ const PrintLabel = () => {
         .label {
           border: 2px solid #333;
           padding: 0.5cm;
-          height: 8cm;
+          height: 12cm;
           box-sizing: border-box;
           break-inside: avoid;
           display: flex;
           flex-direction: column;
-          justify-content: space-between;
+          margin-bottom: 0.5cm;
         }
         .label-header {
-          border-bottom: 1px solid #333;
-          padding-bottom: 0.2cm;
-          margin-bottom: 0.3cm;
+          text-align: center;
+          margin-bottom: 0.5cm;
+          padding-bottom: 0.3cm;
+          border-bottom: 2px solid #333;
         }
         .order-code {
-          font-size: 16px;
+          font-size: 18px;
           font-weight: bold;
-          text-align: center;
         }
-        .customer-info {
+        .address-section {
+          margin-bottom: 0.4cm;
+        }
+        .address-title {
+          font-size: 12px;
+          font-weight: bold;
+          background-color: #f0f0f0;
+          padding: 0.2cm;
+          margin-bottom: 0.2cm;
+          border: 1px solid #333;
+        }
+        .address-content {
+          font-size: 11px;
+          line-height: 1.4;
+          padding: 0.2cm;
+          border: 1px solid #333;
+          min-height: 2cm;
+        }
+        .sender-address {
+          background-color: #f9f9f9;
+        }
+        .receiver-address {
+          background-color: white;
+        }
+        .items-section {
           flex-grow: 1;
         }
-        .customer-name {
-          font-size: 14px;
+        .items-title {
+          font-size: 12px;
           font-weight: bold;
+          background-color: #f0f0f0;
+          padding: 0.2cm;
+          border: 1px solid #333;
           margin-bottom: 0.2cm;
         }
-        .customer-phone {
-          font-size: 12px;
-          margin-bottom: 0.3cm;
+        .items-content {
+          border: 1px solid #333;
+          padding: 0.2cm;
+          background-color: white;
+          min-height: 3cm;
         }
-        .customer-address {
+        .item-row {
+          display: flex;
+          justify-content: space-between;
           font-size: 11px;
-          line-height: 1.3;
-          white-space: pre-wrap;
+          line-height: 1.4;
+          margin-bottom: 0.1cm;
+        }
+        .item-name {
+          flex-grow: 1;
+          margin-right: 0.2cm;
+        }
+        .item-qty {
+          font-weight: bold;
+          min-width: 1cm;
+          text-align: right;
         }
         .page-break {
           page-break-before: always;
@@ -210,24 +289,41 @@ const PrintLabel = () => {
       </style>
     `;
 
+    const senderAddress = "หลิวเหล่าซือ 145 Summer Hotel ถ.ปฏิพัทธ์ ต.ตลาดเหนือ อ.เมือง จ.ภูเก็ต 83000 0647545296";
+    
     const labelsHtml = selectedOrdersData.map((order, index) => {
-      const lines = order.customer_contact.split('\n');
-      const customerName = lines[0] || '';
-      const customerPhone = lines[1] || '';
-      const customerAddress = lines.slice(2).join('\n') || '';
-      
+      const receiverAddress = order.customer_contact || '';
       const shouldPageBreak = index > 0 && index % labelsPerPage === 0;
+      
+      const itemsHtml = order.items.map(item => `
+        <div class="item-row">
+          <div class="item-name">${item.product_name}</div>
+          <div class="item-qty">จำนวน ${item.quantity}</div>
+        </div>
+      `).join('');
       
       return `
         ${shouldPageBreak ? '<div class="page-break"></div>' : ''}
         <div class="label">
           <div class="label-header">
-            <div class="order-code">${order.order_code}</div>
+            <div class="order-code">ใบปะหน้า - ${order.order_code}</div>
           </div>
-          <div class="customer-info">
-            <div class="customer-name">${customerName}</div>
-            <div class="customer-phone">${customerPhone}</div>
-            <div class="customer-address">${customerAddress}</div>
+          
+          <div class="address-section">
+            <div class="address-title">ที่อยู่ผู้ส่ง (FROM)</div>
+            <div class="address-content sender-address">${senderAddress}</div>
+          </div>
+          
+          <div class="address-section">
+            <div class="address-title">ที่อยู่ผู้รับ (TO)</div>
+            <div class="address-content receiver-address">${receiverAddress}</div>
+          </div>
+          
+          <div class="items-section">
+            <div class="items-title">รายการสั่งซื้อ (ORDER ITEMS)</div>
+            <div class="items-content">
+              ${itemsHtml}
+            </div>
           </div>
         </div>
       `;
@@ -242,9 +338,9 @@ const PrintLabel = () => {
         </head>
         <body>
           <div class="no-print" style="text-align: center; padding: 1cm; background: #f5f5f5; margin-bottom: 1cm;">
-            <h2>Delivery Labels Preview</h2>
-            <p>${selectedOrdersData.length} labels selected</p>
-            <button onclick="window.print()" style="padding: 0.5cm 1cm; font-size: 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Print Labels</button>
+            <h2>Shipping Labels Preview</h2>
+            <p>${selectedOrdersData.length} ใบปะหน้า selected</p>
+            <button onclick="window.print()" style="padding: 0.5cm 1cm; font-size: 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Print Shipping Labels</button>
           </div>
           <div class="labels-container">
             ${labelsHtml}
