@@ -166,7 +166,10 @@ const PrintLabel = () => {
   };
 
   const generatePrintView = async () => {
+    console.log('Print button clicked, selectedOrders:', selectedOrders);
+    
     if (selectedOrders.length === 0) {
+      console.log('No orders selected');
       toast({
         title: "No Orders Selected",
         description: "Please select orders to print labels",
@@ -175,11 +178,14 @@ const PrintLabel = () => {
       return;
     }
 
+    console.log('Fetching order items for orders:', selectedOrders);
     const selectedOrdersData = await fetchOrderItems(selectedOrders);
+    console.log('Fetched order data:', selectedOrdersData);
     
     if (selectedOrdersData.length === 0) {
+      console.log('No order data returned');
       toast({
-        title: "Error",
+        title: "Error", 
         description: "Failed to fetch order data for printing",
         variant: "destructive"
       });
