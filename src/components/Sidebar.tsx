@@ -65,12 +65,9 @@ const Sidebar = ({ activeView, onViewChange }: SidebarProps) => {
   const initials = getInitials(displayName);
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
-    { id: 'books', label: 'Book Management', icon: BookOpen },
-    { id: 'bookstore-pos', label: 'Bookstore POS', icon: ShoppingCart },
-    { id: 'products', label: 'Products', icon: Package },
-    { id: 'sales', label: 'Sales', icon: TrendingUp },
+    { id: 'inventory', label: 'Inventory Management', icon: Package },
     { id: 'pos', label: 'POS System', icon: CreditCard },
-    { id: 'orders', label: 'Orders', icon: FileText },
+    { id: 'orders', label: 'Orders & Sales', icon: FileText },
     { id: 'crm', label: 'CRM', icon: UserCheck },
     { id: 'print', label: 'Print Labels', icon: Printer },
     { id: 'users', label: 'Users', icon: Users },

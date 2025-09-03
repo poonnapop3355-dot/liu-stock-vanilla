@@ -40,14 +40,8 @@ const Index = () => {
     switch (activeView) {
       case 'dashboard':
         return <Dashboard />;
-      case 'books':
+      case 'inventory':
         return <RoleGuard requiredRole="staff"><BookManagement /></RoleGuard>;
-      case 'bookstore-pos':
-        return <RoleGuard requiredRole="staff"><BookstorePOS /></RoleGuard>;
-      case 'products':
-        return <RoleGuard requiredRole="staff"><ProductManagement /></RoleGuard>;
-      case 'sales':
-        return <RoleGuard requiredRole="staff"><SalesManagement /></RoleGuard>;
       case 'pos':
         return <RoleGuard requiredRole="staff"><EnhancedPOS /></RoleGuard>;
       case 'orders':
