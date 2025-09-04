@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Plus, Minus, Trash2, Package } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { DatePicker } from "@/components/DatePicker";
 
 interface OrderItem {
   product_id: number;
@@ -16,8 +17,8 @@ interface OrderItem {
 
 interface POSOrder {
   customer_contact: string;
-  order_date: string;
-  delivery_date: string;
+  order_date: Date;
+  delivery_date: Date;
   items: OrderItem[];
   remarks: string;
 }
@@ -25,8 +26,8 @@ interface POSOrder {
 const POSOrderEntry = () => {
   const [order, setOrder] = useState<POSOrder>({
     customer_contact: "",
-    order_date: new Date().toISOString().split('T')[0],
-    delivery_date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    order_date: new Date(),
+    delivery_date: new Date(Date.now() + 24 * 60 * 60 * 1000),
     items: [],
     remarks: ""
   });
@@ -156,20 +157,18 @@ const POSOrderEntry = () => {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="order_date">Order Date</Label>
-                <Input
-                  id="order_date"
-                  type="date"
-                  value={order.order_date}
-                  onChange={(e) => setOrder(prev => ({ ...prev, order_date: e.target.value }))}
+                <DatePicker
+                  date={order.order_date}
+                  onDateChange={(date) => setOrder(prev => ({ ...prev, order_date: date || new Date() }))}
+                  placeholder="Select order date"
                 />
               </div>
               <div>
                 <Label htmlFor="delivery_date">Delivery Date</Label>
-                <Input
-                  id="delivery_date"
-                  type="date"
-                  value={order.delivery_date}
-                  onChange={(e) => setOrder(prev => ({ ...prev, delivery_date: e.target.value }))}
+                <DatePicker
+                  date={order.delivery_date}
+                  onDateChange={(date) => setOrder(prev => ({ ...prev, delivery_date: date || new Date() }))}
+                  placeholder="Select delivery date"
                 />
               </div>
             </div>

@@ -179,17 +179,92 @@ const CRMManagement = () => {
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       const csv = e.target?.result as string;
       const lines = csv.split('\n');
-      const headers = lines[0].split(',');
+      const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
       
-      toast({
-        title: "CSV Import",
-        description: `Found ${lines.length - 1} rows. Import functionality would be implemented here.`
-      });
+      try {
+        const customersToImport = [];
+        for (let i = 1; i < lines.length; i++) {
+          if (!lines[i].trim()) continue;
+          
+          const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
+          const customer = {
+            customer_contact: values[3] || '', // Full Contact
+            name: values[0] || '',
+            phone: values[1] || '',
+            address: values[2] || '',
+            notes: values[4] || ''
+          };
+          
+          if (customer.customer_contact) {
+            customersToImport.push(customer);
+          }
+        }
+
+        const { error } = await supabase
+          .from('customers')
+          .upsert(customersToImport, { onConflict: 'customer_contact' });
+
+        if (error) throw error;
+
+        toast({
+          title: "CSV Import Successful",
+          description: `Imported ${customersToImport.length} customers`
+        });
+
+        fetchCustomers();
+      } catch (error) {
+        toast({
+          title: "Import Failed",
+          description: "Failed to import customers from CSV",
+          variant: "destructive"
+        });
+      }
     };
     reader.readAsText(file);
+  };
+
+  const importCustomersFromOrders = async () => {
+    try {
+      const { data: orders, error } = await supabase
+        .from('orders')
+        .select('customer_contact')
+        .not('customer_contact', 'is', null);
+
+      if (error) throw error;
+
+      const uniqueContacts = [...new Set(orders.map(order => order.customer_contact))];
+      const customersToImport = uniqueContacts.map(contact => {
+        const lines = contact.split('\n');
+        return {
+          customer_contact: contact,
+          name: lines[0] || '',
+          phone: lines[1] || '',
+          address: lines.slice(2).join('\n') || ''
+        };
+      });
+
+      const { error: insertError } = await supabase
+        .from('customers')
+        .upsert(customersToImport, { onConflict: 'customer_contact' });
+
+      if (insertError) throw insertError;
+
+      toast({
+        title: "Import Successful",
+        description: `Imported ${customersToImport.length} customers from orders`
+      });
+
+      fetchCustomers();
+    } catch (error) {
+      toast({
+        title: "Import Failed",
+        description: "Failed to import customers from orders",
+        variant: "destructive"
+      });
+    }
   };
 
   const CustomerForm = () => (
@@ -255,6 +330,10 @@ const CRMManagement = () => {
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">CRM Management</h1>
         <div className="flex gap-2">
+          <Button onClick={importCustomersFromOrders} variant="outline">
+            <Upload className="h-4 w-4 mr-2" />
+            Import from Orders
+          </Button>
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
               <Button>

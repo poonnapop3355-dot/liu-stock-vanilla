@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,105 +12,202 @@ import { Plus, Edit, Trash2, Download, Upload, Search } from "lucide-react";
 
 const ProductManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const { toast } = useToast();
 
-  // Handler functions for button actions
-  const handleImportCSV = () => {
-    // Create file input element for CSV import
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.csv';
-    input.onchange = (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) {
-        console.log('CSV file selected:', file.name);
-        // TODO: Parse CSV and import to database
-        alert('CSV import functionality requires Supabase connection');
-      }
-    };
-    input.click();
-  };
+  useEffect(() => {
+    fetchProducts();
+  }, []);
 
-  const handleExportCSV = () => {
-    // Generate CSV content
-    const headers = ['SKU', 'Name', 'Price', 'Quantity', 'Low Stock Threshold'];
-    const csvContent = [
-      headers.join(','),
-      ...products.map(p => [p.sku, p.name, p.sellingPrice, p.quantity, p.lowStockThreshold].join(','))
-    ].join('\n');
-    
-    // Create download link
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'products.csv';
-    a.click();
-    window.URL.revokeObjectURL(url);
-  };
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .order('name');
 
-  const handleEditProduct = (sku: string) => {
-    console.log('Edit product:', sku);
-    alert(`Edit functionality for ${sku} - requires Supabase connection for full implementation`);
-  };
-
-  const handleDeleteProduct = (sku: string) => {
-    if (confirm(`Are you sure you want to delete product ${sku}?`)) {
-      console.log('Delete product:', sku);
-      alert(`Delete functionality for ${sku} - requires Supabase connection for full implementation`);
+      if (error) throw error;
+      setProducts(data || []);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to fetch products",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
     }
   };
-
-  // Mock data - will be replaced with real data from Supabase
-  const products = [
-    { 
-      sku: "TEE001", 
-      name: "Basic White T-Shirt", 
-      sellingPrice: 29.99, 
-      quantity: 150, 
-      lowStockThreshold: 20,
-      status: "In Stock"
-    },
-    { 
-      sku: "TEE002", 
-      name: "Premium Black T-Shirt", 
-      sellingPrice: 39.99, 
-      quantity: 8, 
-      lowStockThreshold: 15,
-      status: "Low Stock"
-    },
-    { 
-      sku: "TEE003", 
-      name: "Designer Blue T-Shirt", 
-      sellingPrice: 49.99, 
-      quantity: 0, 
-      lowStockThreshold: 10,
-      status: "Out of Stock"
-    },
-    { 
-      sku: "TEE004", 
-      name: "Vintage Red T-Shirt", 
-      sellingPrice: 34.99, 
-      quantity: 75, 
-      lowStockThreshold: 25,
-      status: "In Stock"
-    }
-  ];
 
   const filteredProducts = products.filter(product =>
     product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     product.sku.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const getStatusBadge = (status: string, quantity: number, threshold: number) => {
+  const handleImportCSV = () => {
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = '.csv';
+    fileInput.onchange = async (event) => {
+      const file = (event.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+
+      const text = await file.text();
+      const lines = text.split('\n');
+      const headers = lines[0].split(',').map(h => h.trim());
+      
+      // Expected headers: SKU, Name, Price, Quantity, Category, Description
+      const expectedHeaders = ['SKU', 'Name', 'Price', 'Quantity', 'Category'];
+      const hasValidHeaders = expectedHeaders.every(header => 
+        headers.some(h => h.toLowerCase().includes(header.toLowerCase()))
+      );
+
+      if (!hasValidHeaders) {
+        toast({
+          title: "Invalid CSV Format",
+          description: "CSV must have columns: SKU, Name, Price, Quantity, Category",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      try {
+        const products = [];
+        for (let i = 1; i < lines.length; i++) {
+          if (!lines[i].trim()) continue;
+          
+          const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
+          const product = {
+            sku: values[0],
+            name: values[1],
+            price: parseFloat(values[2]) || 0,
+            stock_quantity: parseInt(values[3]) || 0,
+            category: values[4] || 'General',
+            description: values[5] || '',
+            status: 'active'
+          };
+          
+          if (product.sku && product.name && product.price > 0) {
+            products.push(product);
+          }
+        }
+
+        // Insert into database
+        const { error } = await supabase
+          .from('products')
+          .upsert(products, { onConflict: 'sku' });
+
+        if (error) throw error;
+
+        toast({
+          title: "Import Successful",
+          description: `Imported ${products.length} products successfully`
+        });
+
+        fetchProducts(); // Refresh the products list
+      } catch (error) {
+        toast({
+          title: "Import Failed",
+          description: "Failed to import products from CSV",
+          variant: "destructive"
+        });
+      }
+    };
+    fileInput.click();
+  };
+
+  const handleExportCSV = async () => {
+    try {
+      const { data: products, error } = await supabase
+        .from('products')
+        .select('*')
+        .order('name');
+
+      if (error) throw error;
+
+      const csvContent = [
+        ['SKU', 'Name', 'Price', 'Quantity', 'Category', 'Description', 'Status'].join(','),
+        ...products.map(product => [
+          product.sku,
+          `"${product.name.replace(/"/g, '""')}"`,
+          product.price,
+          product.stock_quantity,
+          product.category || '',
+          `"${(product.description || '').replace(/"/g, '""')}"`,
+          product.status
+        ].join(','))
+      ].join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `inventory_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast({
+        title: "Export Successful",
+        description: `Exported ${products.length} products to CSV`
+      });
+    } catch (error) {
+      toast({
+        title: "Export Failed",
+        description: "Failed to export products to CSV",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleEditProduct = (sku: string) => {
+    console.log('Edit product:', sku);
+    // TODO: Open edit dialog with product data
+  };
+
+  const handleDeleteProduct = async (id: string) => {
+    if (confirm('Are you sure you want to delete this product?')) {
+      try {
+        const { error } = await supabase
+          .from('products')
+          .delete()
+          .eq('id', id);
+
+        if (error) throw error;
+
+        toast({
+          title: "Product Deleted",
+          description: "Product deleted successfully"
+        });
+
+        fetchProducts();
+      } catch (error) {
+        toast({
+          title: "Delete Failed",
+          description: "Failed to delete product",
+          variant: "destructive"
+        });
+      }
+    }
+  };
+
+  const getStatusBadge = (status: string, quantity: number) => {
     if (quantity === 0) {
       return <Badge variant="destructive">Out of Stock</Badge>;
-    } else if (quantity <= threshold) {
+    } else if (quantity <= 10) {
       return <Badge className="bg-warning text-warning-foreground">Low Stock</Badge>;
     } else {
       return <Badge className="bg-success text-success-foreground">In Stock</Badge>;
     }
   };
+
+  if (loading) {
+    return <div className="flex items-center justify-center h-96">Loading...</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -204,13 +303,13 @@ const ProductManagement = () => {
               </TableHeader>
               <TableBody>
                 {filteredProducts.map((product) => (
-                  <TableRow key={product.sku} className="hover:bg-muted/30 transition-colors">
+                  <TableRow key={product.id} className="hover:bg-muted/30 transition-colors">
                     <TableCell className="font-medium">{product.sku}</TableCell>
                     <TableCell>{product.name}</TableCell>
-                    <TableCell>${product.sellingPrice}</TableCell>
-                    <TableCell>{product.quantity}</TableCell>
+                    <TableCell>฿{product.price}</TableCell>
+                    <TableCell>{product.stock_quantity}</TableCell>
                     <TableCell>
-                      {getStatusBadge(product.status, product.quantity, product.lowStockThreshold)}
+                      {getStatusBadge(product.status, product.stock_quantity)}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
@@ -218,7 +317,7 @@ const ProductManagement = () => {
                           <Edit className="h-3 w-3" />
                           Edit
                         </Button>
-                        <Button size="sm" variant="outline" className="gap-1 text-destructive hover:text-destructive" onClick={() => handleDeleteProduct(product.sku)}>
+                        <Button size="sm" variant="outline" className="gap-1 text-destructive hover:text-destructive" onClick={() => handleDeleteProduct(product.id)}>
                           <Trash2 className="h-3 w-3" />
                           Delete
                         </Button>

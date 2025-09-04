@@ -196,10 +196,29 @@ const PrintLabel = () => {
     const printWindow = window.open('', '_blank', 'width=800,height=600');
     if (!printWindow) {
       toast({
-        title: "Popup Blocked",
-        description: "Please allow popups for this site to print labels",
+        title: "Popup Blocked - Please Enable Popups",
+        description: "To print labels, please enable popups for this site in your browser settings. Look for the popup icon in your address bar and click 'Always allow popups from this site'.",
         variant: "destructive"
       });
+      
+      // Try alternative method - create a temporary page
+      const printContent = generatePrintContent(selectedOrdersData);
+      const blob = new Blob([printContent], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      
+      // Create temporary link to download/view the print content
+      const link = document.createElement('a');
+      link.href = url;
+      link.target = '_blank';
+      link.download = `shipping-labels-${new Date().toISOString().split('T')[0]}.html`;
+      
+      toast({
+        title: "Alternative Download",
+        description: "Since popups are blocked, the print file has been downloaded. Open it and use Ctrl+P to print.",
+      });
+      
+      link.click();
+      URL.revokeObjectURL(url);
       return;
     }
 
@@ -351,7 +370,161 @@ const PrintLabel = () => {
       `;
     }).join('');
 
-    const printContent = `
+    const printContent = generatePrintContent(selectedOrdersData);
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+  };
+
+  const generatePrintContent = (selectedOrdersData: OrderWithItems[]) => {
+    const labelsPerRow = 1;
+    const labelsPerPage = 2;
+    
+    const labelStyle = `
+      <style>
+        @page {
+          size: A4;
+          margin: 0.5cm;
+        }
+        body {
+          font-family: Arial, sans-serif;
+          margin: 0;
+          padding: 0;
+        }
+        .labels-container {
+          display: grid;
+          grid-template-columns: repeat(${labelsPerRow}, 1fr);
+          gap: 0.5cm;
+          width: 100%;
+        }
+        .label {
+          border: 2px solid #333;
+          padding: 0.5cm;
+          height: 12cm;
+          box-sizing: border-box;
+          break-inside: avoid;
+          display: flex;
+          flex-direction: column;
+          margin-bottom: 0.5cm;
+        }
+        .label-header {
+          text-align: center;
+          margin-bottom: 0.5cm;
+          padding-bottom: 0.3cm;
+          border-bottom: 2px solid #333;
+        }
+        .order-code {
+          font-size: 18px;
+          font-weight: bold;
+        }
+        .address-section {
+          margin-bottom: 0.4cm;
+        }
+        .address-title {
+          font-size: 12px;
+          font-weight: bold;
+          background-color: #f0f0f0;
+          padding: 0.2cm;
+          margin-bottom: 0.2cm;
+          border: 1px solid #333;
+        }
+        .address-content {
+          font-size: 11px;
+          line-height: 1.4;
+          padding: 0.2cm;
+          border: 1px solid #333;
+          min-height: 2cm;
+        }
+        .sender-address {
+          background-color: #f9f9f9;
+        }
+        .receiver-address {
+          background-color: white;
+        }
+        .items-section {
+          flex-grow: 1;
+        }
+        .items-title {
+          font-size: 12px;
+          font-weight: bold;
+          background-color: #f0f0f0;
+          padding: 0.2cm;
+          border: 1px solid #333;
+          margin-bottom: 0.2cm;
+        }
+        .items-content {
+          border: 1px solid #333;
+          padding: 0.2cm;
+          background-color: white;
+          min-height: 3cm;
+        }
+        .item-row {
+          display: flex;
+          justify-content: space-between;
+          font-size: 11px;
+          line-height: 1.4;
+          margin-bottom: 0.1cm;
+        }
+        .item-name {
+          flex-grow: 1;
+          margin-right: 0.2cm;
+        }
+        .item-qty {
+          font-weight: bold;
+          min-width: 1cm;
+          text-align: right;
+        }
+        .page-break {
+          page-break-before: always;
+        }
+        @media print {
+          .no-print {
+            display: none;
+          }
+        }
+      </style>
+    `;
+
+    const senderAddress = "หลิวเหล่าซือ 145 Summer Hotel ถ.ปฏิพัทธ์ ต.ตลาดเหนือ อ.เมือง จ.ภูเก็ต 83000 0647545296";
+    
+    const labelsHtml = selectedOrdersData.map((order, index) => {
+      const receiverAddress = order.customer_contact || '';
+      const shouldPageBreak = index > 0 && index % labelsPerPage === 0;
+      
+      const itemsHtml = order.items.map(item => `
+        <div class="item-row">
+          <div class="item-name">${item.product_name}</div>
+          <div class="item-qty">จำนวน ${item.quantity}</div>
+        </div>
+      `).join('');
+      
+      return `
+        ${shouldPageBreak ? '<div class="page-break"></div>' : ''}
+        <div class="label">
+          <div class="label-header">
+            <div class="order-code">ใบปะหน้า - ${order.order_code}</div>
+          </div>
+          
+          <div class="address-section">
+            <div class="address-title">ที่อยู่ผู้ส่ง (FROM)</div>
+            <div class="address-content sender-address">${senderAddress}</div>
+          </div>
+          
+          <div class="address-section">
+            <div class="address-title">ที่อยู่ผู้รับ (TO)</div>
+            <div class="address-content receiver-address">${receiverAddress}</div>
+          </div>
+          
+          <div class="items-section">
+            <div class="items-title">รายการสั่งซื้อ (ORDER ITEMS)</div>
+            <div class="items-content">
+              ${itemsHtml}
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    return `
       <!DOCTYPE html>
       <html>
         <head>
@@ -370,9 +543,6 @@ const PrintLabel = () => {
         </body>
       </html>
     `;
-
-    printWindow.document.write(printContent);
-    printWindow.document.close();
   };
 
   const filteredOrders = getFilteredOrders();

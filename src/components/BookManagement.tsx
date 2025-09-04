@@ -9,7 +9,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Search, Edit, Trash2, BookOpen, Users, Tag } from 'lucide-react';
+import { Edit, Trash2, Plus, Search, Download, Upload, Book, Eye, BookOpen, Users, Tag } from "lucide-react";
+import { DatePicker } from "@/components/DatePicker";
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -76,7 +77,7 @@ const BookManagement = () => {
   const [newAuthor, setNewAuthor] = useState({
     name: '',
     biography: '',
-    birth_date: '',
+    birth_date: new Date(),
     nationality: '',
     website: ''
   });
@@ -148,13 +149,13 @@ const BookManagement = () => {
     try {
       const { data, error } = await supabase.from('authors').insert([{
         ...newAuthor,
-        birth_date: newAuthor.birth_date || null
+        birth_date: newAuthor.birth_date.toISOString().split('T')[0]
       }]).select();
 
       if (error) throw error;
 
       setAuthors([...authors, data[0]]);
-      setNewAuthor({ name: '', biography: '', birth_date: '', nationality: '', website: '' });
+      setNewAuthor({ name: '', biography: '', birth_date: new Date(), nationality: '', website: '' });
       toast({ title: "Success", description: "Author added successfully" });
     } catch (error) {
       console.error('Error adding author:', error);
@@ -456,11 +457,10 @@ const BookManagement = () => {
                     </div>
                     <div>
                       <Label htmlFor="birthDate">Birth Date</Label>
-                      <Input
-                        id="birthDate"
-                        type="date"
-                        value={newAuthor.birth_date}
-                        onChange={(e) => setNewAuthor({...newAuthor, birth_date: e.target.value})}
+                      <DatePicker
+                        date={newAuthor.birth_date}
+                        onDateChange={(date) => setNewAuthor({...newAuthor, birth_date: date || new Date()})}
+                        placeholder="Select birth date"
                       />
                     </div>
                   </div>

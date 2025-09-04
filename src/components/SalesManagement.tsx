@@ -7,10 +7,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Eye, Printer, Search, Package, Calendar } from "lucide-react";
+import { Search, Plus, Minus, ShoppingCart, X, Printer, Package, Calendar, Eye } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { DatePicker } from "@/components/DatePicker";
 
 const SalesManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [saleDate, setSaleDate] = useState<Date>(new Date());
   const [isCreateSaleOpen, setIsCreateSaleOpen] = useState(false);
 
   // Handler functions for button actions
@@ -213,7 +217,11 @@ const SalesManagement = () => {
                       </div>
                       <div>
                         <Label htmlFor="saleDate">Sale Date</Label>
-                        <Input id="saleDate" type="date" />
+                        <DatePicker
+                          date={saleDate}
+                          onDateChange={(date) => setSaleDate(date || new Date())}
+                          placeholder="Select sale date"
+                        />
                       </div>
                     </div>
                     

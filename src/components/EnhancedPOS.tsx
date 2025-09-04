@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Search, Plus, Minus, ShoppingCart, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { DatePicker } from "@/components/DatePicker";
 
 interface Product {
   id: string;
@@ -32,8 +33,8 @@ interface CartItem {
 
 interface OrderData {
   customer_contact: string;
-  order_date: string;
-  delivery_date: string;
+  order_date: Date;
+  delivery_date: Date;
   remarks: string;
 }
 
@@ -45,8 +46,8 @@ const EnhancedPOS = () => {
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [orderData, setOrderData] = useState<OrderData>({
     customer_contact: "",
-    order_date: new Date().toISOString().split('T')[0],
-    delivery_date: new Date().toISOString().split('T')[0],
+    order_date: new Date(),
+    delivery_date: new Date(),
     remarks: ""
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -185,8 +186,8 @@ const EnhancedPOS = () => {
         .insert({
           order_code: orderCode,
           customer_contact: orderData.customer_contact,
-          order_date: orderData.order_date,
-          delivery_date: orderData.delivery_date,
+          order_date: orderData.order_date.toISOString().split('T')[0],
+          delivery_date: orderData.delivery_date.toISOString().split('T')[0],
           total_amount: totalAmount,
           remarks: orderData.remarks
         })
@@ -248,8 +249,8 @@ const EnhancedPOS = () => {
       setCart([]);
       setOrderData({
         customer_contact: "",
-        order_date: new Date().toISOString().split('T')[0],
-        delivery_date: new Date().toISOString().split('T')[0],
+        order_date: new Date(),
+        delivery_date: new Date(),
         remarks: ""
       });
       setIsCheckoutOpen(false);
@@ -318,20 +319,18 @@ const EnhancedPOS = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="order_date">Order Date</Label>
-                  <Input
-                    id="order_date"
-                    type="date"
-                    value={orderData.order_date}
-                    onChange={(e) => setOrderData({...orderData, order_date: e.target.value})}
+                  <DatePicker
+                    date={orderData.order_date}
+                    onDateChange={(date) => setOrderData({...orderData, order_date: date || new Date()})}
+                    placeholder="Select order date"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="delivery_date">Delivery Date</Label>
-                  <Input
-                    id="delivery_date"
-                    type="date"
-                    value={orderData.delivery_date}
-                    onChange={(e) => setOrderData({...orderData, delivery_date: e.target.value})}
+                  <DatePicker
+                    date={orderData.delivery_date}
+                    onDateChange={(date) => setOrderData({...orderData, delivery_date: date || new Date()})}
+                    placeholder="Select delivery date"
                   />
                 </div>
               </div>
