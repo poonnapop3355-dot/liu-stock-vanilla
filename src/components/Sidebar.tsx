@@ -40,11 +40,18 @@ const Sidebar = ({ activeView, onViewChange }: SidebarProps) => {
     const { data } = await supabase
       .from('user_roles')
       .select('role')
-      .eq('user_id', user.id)
-      .single();
+      .eq('user_id', user.id);
     
-    if (data) {
-      setUserRole(data.role);
+    if (data && data.length > 0) {
+      // If user has multiple roles, prioritize admin > staff
+      const roles = data.map(r => r.role);
+      if (roles.includes('admin')) {
+        setUserRole('admin');
+      } else if (roles.includes('staff')) {
+        setUserRole('staff');
+      } else {
+        setUserRole(roles[0]);
+      }
     }
   };
 
