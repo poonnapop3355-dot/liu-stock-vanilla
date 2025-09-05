@@ -41,7 +41,7 @@ const Index = () => {
       case 'dashboard':
         return <Dashboard />;
       case 'inventory':
-        return <RoleGuard requiredRole="staff"><BookManagement /></RoleGuard>;
+        return <RoleGuard requiredRole="staff"><ProductManagement /></RoleGuard>;
       case 'pos':
         return <RoleGuard requiredRole="staff"><EnhancedPOS /></RoleGuard>;
       case 'orders':
