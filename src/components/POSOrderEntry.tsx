@@ -115,8 +115,8 @@ const POSOrderEntry = () => {
       // Reset form
       setOrder({
         customer_contact: "",
-        order_date: new Date().toISOString().split('T')[0],
-        delivery_date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        order_date: new Date(),
+        delivery_date: new Date(Date.now() + 24 * 60 * 60 * 1000),
         items: [],
         remarks: ""
       });
