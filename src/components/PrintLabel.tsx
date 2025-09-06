@@ -255,16 +255,18 @@ const PrintLabel = () => {
         }
         .label-header {
           text-align: center;
-          margin-bottom: 0.5cm;
-          padding-bottom: 0.3cm;
-          border-bottom: 2px solid #333;
+          margin-bottom: 0.3cm;
+          padding-bottom: 0.2cm;
+          border-bottom: 1.5px solid #333;
         }
         .order-code {
-          font-size: 18px;
+          font-size: 14px;
           font-weight: bold;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
         }
         .address-section {
-          margin-bottom: 0.4cm;
+          margin-bottom: 0.25cm;
         }
         .address-title {
           font-size: 10px;
@@ -279,7 +281,10 @@ const PrintLabel = () => {
           line-height: 1.3;
           padding: 0.15cm;
           border: 1px solid #333;
-          min-height: 1.5cm;
+          min-height: 1.2cm;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
+          hyphens: auto;
         }
         .sender-address {
           background-color: #f9f9f9;
@@ -302,7 +307,9 @@ const PrintLabel = () => {
           border: 1px solid #333;
           padding: 0.15cm;
           background-color: white;
-          min-height: 2cm;
+          min-height: 1.8cm;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
         }
         .item-row {
           display: flex;
@@ -314,6 +321,9 @@ const PrintLabel = () => {
         .item-name {
           flex-grow: 1;
           margin-right: 0.2cm;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
+          max-width: 70%;
         }
         .item-qty {
           font-weight: bold;
@@ -348,7 +358,7 @@ const PrintLabel = () => {
         ${shouldPageBreak ? '<div class="page-break"></div>' : ''}
         <div class="label">
           <div class="label-header">
-            <div class="order-code">ใบปะหน้า - ${order.order_code}</div>
+            <div class="order-code">ORDER-${order.order_code}</div>
           </div>
           
           <div class="address-section">
@@ -410,16 +420,18 @@ const PrintLabel = () => {
         }
         .label-header {
           text-align: center;
-          margin-bottom: 0.5cm;
-          padding-bottom: 0.3cm;
-          border-bottom: 2px solid #333;
+          margin-bottom: 0.3cm;
+          padding-bottom: 0.2cm;
+          border-bottom: 1.5px solid #333;
         }
         .order-code {
-          font-size: 18px;
+          font-size: 14px;
           font-weight: bold;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
         }
         .address-section {
-          margin-bottom: 0.4cm;
+          margin-bottom: 0.25cm;
         }
         .address-title {
           font-size: 10px;
@@ -434,7 +446,10 @@ const PrintLabel = () => {
           line-height: 1.3;
           padding: 0.15cm;
           border: 1px solid #333;
-          min-height: 1.5cm;
+          min-height: 1.2cm;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
+          hyphens: auto;
         }
         .sender-address {
           background-color: #f9f9f9;
@@ -457,7 +472,9 @@ const PrintLabel = () => {
           border: 1px solid #333;
           padding: 0.15cm;
           background-color: white;
-          min-height: 2cm;
+          min-height: 1.8cm;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
         }
         .item-row {
           display: flex;
@@ -469,6 +486,9 @@ const PrintLabel = () => {
         .item-name {
           flex-grow: 1;
           margin-right: 0.2cm;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
+          max-width: 70%;
         }
         .item-qty {
           font-weight: bold;
@@ -503,7 +523,7 @@ const PrintLabel = () => {
         ${shouldPageBreak ? '<div class="page-break"></div>' : ''}
         <div class="label">
           <div class="label-header">
-            <div class="order-code">ใบปะหน้า - ${order.order_code}</div>
+            <div class="order-code">ORDER-${order.order_code}</div>
           </div>
           
           <div class="address-section">
