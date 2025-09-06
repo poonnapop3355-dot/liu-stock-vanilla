@@ -216,7 +216,7 @@ const BookstorePOS = () => {
       clearCart();
       toast({
         title: "Order Completed",
-        description: `Order ${orderCode} processed successfully - Total: $${totalAmount.toFixed(2)}`,
+        description: `Order ${orderCode} processed successfully - Total: ฿${totalAmount.toFixed(2)}`,
       });
 
     } catch (error) {
@@ -248,7 +248,7 @@ const BookstorePOS = () => {
         </div>
         <div className="text-right">
           <p className="text-sm text-muted-foreground">Cart Items: {cart.length}</p>
-          <p className="text-lg font-bold">Total: ${calculateTotal().toFixed(2)}</p>
+          <p className="text-lg font-bold">Total: ฿{calculateTotal().toFixed(2)}</p>
         </div>
       </div>
 
@@ -297,7 +297,7 @@ const BookstorePOS = () => {
                             )}
                           </div>
                         </TableCell>
-                        <TableCell>${book.price.toFixed(2)}</TableCell>
+                        <TableCell>฿{book.price.toFixed(2)}</TableCell>
                         <TableCell>
                           <Badge variant={book.stock_quantity > 10 ? "default" : "secondary"}>
                             {book.stock_quantity}
@@ -339,7 +339,7 @@ const BookstorePOS = () => {
                     <div key={item.id} className="flex items-center justify-between p-2 border rounded">
                       <div className="flex-1">
                         <p className="font-medium text-sm">{item.title}</p>
-                        <p className="text-xs text-muted-foreground">${item.price.toFixed(2)} each</p>
+                        <p className="text-xs text-muted-foreground">฿{item.price.toFixed(2)} each</p>
                       </div>
                       <div className="flex items-center gap-2">
                         <Button
@@ -373,17 +373,17 @@ const BookstorePOS = () => {
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span>Subtotal:</span>
-                      <span>${calculateSubtotal().toFixed(2)}</span>
+                      <span>฿{calculateSubtotal().toFixed(2)}</span>
                     </div>
                     {discount > 0 && (
                       <div className="flex justify-between text-green-600">
                         <span>Discount ({discount}%):</span>
-                        <span>-${((calculateSubtotal() * discount) / 100).toFixed(2)}</span>
+                        <span>-฿{((calculateSubtotal() * discount) / 100).toFixed(2)}</span>
                       </div>
                     )}
                     <div className="flex justify-between font-bold text-base">
                       <span>Total:</span>
-                      <span>${calculateTotal().toFixed(2)}</span>
+                      <span>฿{calculateTotal().toFixed(2)}</span>
                     </div>
                   </div>
                 </div>

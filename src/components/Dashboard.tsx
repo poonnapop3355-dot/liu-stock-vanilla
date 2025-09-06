@@ -47,7 +47,7 @@ const Dashboard = () => {
             <DollarSign className="h-4 w-4 text-success" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${stats.revenue.toLocaleString()}</div>
+            <div className="text-2xl font-bold">฿{stats.revenue.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">+15% from last month</p>
           </CardContent>
         </Card>
@@ -77,7 +77,7 @@ const Dashboard = () => {
                   <p className="text-sm text-muted-foreground">{sale.customer}</p>
                 </div>
                 <div className="text-right">
-                  <p className="font-medium">${sale.amount}</p>
+                  <p className="font-medium">฿{sale.amount}</p>
                   <span className={`text-xs px-2 py-1 rounded-full ${
                     sale.status === 'Delivered' ? 'bg-success text-success-foreground' :
                     sale.status === 'Shipped' ? 'bg-primary text-primary-foreground' :

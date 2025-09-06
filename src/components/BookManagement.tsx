@@ -382,7 +382,7 @@ const BookManagement = () => {
                           <Badge variant="secondary">{book.category}</Badge>
                         )}
                       </TableCell>
-                      <TableCell>${book.price}</TableCell>
+                      <TableCell>฿{book.price}</TableCell>
                       <TableCell>
                         <Badge variant={book.stock_quantity > 10 ? "default" : book.stock_quantity > 0 ? "secondary" : "destructive"}>
                           {book.stock_quantity}

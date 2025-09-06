@@ -51,11 +51,11 @@ const SalesManagement = () => {
                     <tr>
                       <td>${item.name}</td>
                       <td>${item.quantity}</td>
-                      <td>$${item.priceAtSale}</td>
+                      <td>฿{item.priceAtSale}</td>
                     </tr>
                   `).join('')}
                 </table>
-                <p><strong>Total: $${sale.totalAmount}</strong></p>
+                <p><strong>Total: ฿{sale.totalAmount}</strong></p>
               </div>
             </div>
           `).join('')}
@@ -75,7 +75,7 @@ const SalesManagement = () => {
   const handleViewSale = (saleId: string) => {
     const sale = sales.find(s => s.saleId === saleId);
     if (sale) {
-      alert(`Viewing sale ${saleId}\nCustomer: ${sale.customer}\nTotal: $${sale.totalAmount}\nStatus: ${sale.shippingInfo.status}`);
+      alert(`Viewing sale ${saleId}\nCustomer: ${sale.customer}\nTotal: ฿{sale.totalAmount}\nStatus: ${sale.shippingInfo.status}`);
     }
   };
 
@@ -107,11 +107,11 @@ const SalesManagement = () => {
               <tr>
                 <td>${item.name}</td>
                 <td>${item.quantity}</td>
-                <td>$${item.priceAtSale}</td>
+                <td>฿{item.priceAtSale}</td>
               </tr>
             `).join('')}
           </table>
-          <p><strong>Total: $${sale.totalAmount}</strong></p>
+          <p><strong>Total: ฿{sale.totalAmount}</strong></p>
         </body>
       </html>
     `;
@@ -238,7 +238,7 @@ const SalesManagement = () => {
                           <Input placeholder="Search product..." />
                           <Input type="number" placeholder="1" />
                           <Input type="number" placeholder="0.00" />
-                          <div className="flex items-center text-sm font-medium">$0.00</div>
+                          <div className="flex items-center text-sm font-medium">฿0.00</div>
                         </div>
                         <Button variant="outline" size="sm" className="w-full">
                           Add Item
@@ -257,7 +257,7 @@ const SalesManagement = () => {
 
                     <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
                       <span className="font-medium">Total Amount:</span>
-                      <span className="text-xl font-bold">$0.00</span>
+                      <span className="text-xl font-bold">฿0.00</span>
                     </div>
 
                     <div className="flex gap-2 pt-4">
@@ -317,7 +317,7 @@ const SalesManagement = () => {
                         <span>{sale.items.length} item{sale.items.length > 1 ? 's' : ''}</span>
                       </div>
                     </TableCell>
-                    <TableCell className="font-medium">${sale.totalAmount}</TableCell>
+                    <TableCell className="font-medium">฿{sale.totalAmount}</TableCell>
                     <TableCell>
                       {getStatusBadge(sale.shippingInfo.status)}
                     </TableCell>
