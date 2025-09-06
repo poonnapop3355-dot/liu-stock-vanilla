@@ -222,35 +222,36 @@ const PrintLabel = () => {
       return;
     }
 
-    const labelsPerRow = 1;
-    const labelsPerPage = 2;
+    const labelsPerRow = 2;
+    const labelsPerPage = 6;
     
     const labelStyle = `
       <style>
         @page {
           size: A4;
-          margin: 0.5cm;
+          margin: 0.4cm;
         }
         body {
-          font-family: Arial, sans-serif;
+          font-family: 'Sarabun', 'Noto Sans Thai', 'Arial Unicode MS', Arial, sans-serif;
           margin: 0;
           padding: 0;
+          font-size: 12px;
         }
         .labels-container {
           display: grid;
           grid-template-columns: repeat(${labelsPerRow}, 1fr);
-          gap: 0.5cm;
+          gap: 0.3cm;
           width: 100%;
         }
         .label {
-          border: 2px solid #333;
-          padding: 0.5cm;
-          height: 12cm;
+          border: 1.5px solid #333;
+          padding: 0.3cm;
+          height: 8.5cm;
           box-sizing: border-box;
           break-inside: avoid;
           display: flex;
           flex-direction: column;
-          margin-bottom: 0.5cm;
+          margin-bottom: 0.3cm;
         }
         .label-header {
           text-align: center;
@@ -266,19 +267,19 @@ const PrintLabel = () => {
           margin-bottom: 0.4cm;
         }
         .address-title {
-          font-size: 12px;
+          font-size: 10px;
           font-weight: bold;
           background-color: #f0f0f0;
-          padding: 0.2cm;
-          margin-bottom: 0.2cm;
+          padding: 0.15cm;
+          margin-bottom: 0.1cm;
           border: 1px solid #333;
         }
         .address-content {
-          font-size: 11px;
-          line-height: 1.4;
-          padding: 0.2cm;
+          font-size: 9px;
+          line-height: 1.3;
+          padding: 0.15cm;
           border: 1px solid #333;
-          min-height: 2cm;
+          min-height: 1.5cm;
         }
         .sender-address {
           background-color: #f9f9f9;
@@ -290,25 +291,25 @@ const PrintLabel = () => {
           flex-grow: 1;
         }
         .items-title {
-          font-size: 12px;
+          font-size: 10px;
           font-weight: bold;
           background-color: #f0f0f0;
-          padding: 0.2cm;
+          padding: 0.15cm;
           border: 1px solid #333;
-          margin-bottom: 0.2cm;
+          margin-bottom: 0.1cm;
         }
         .items-content {
           border: 1px solid #333;
-          padding: 0.2cm;
+          padding: 0.15cm;
           background-color: white;
-          min-height: 3cm;
+          min-height: 2cm;
         }
         .item-row {
           display: flex;
           justify-content: space-between;
-          font-size: 11px;
-          line-height: 1.4;
-          margin-bottom: 0.1cm;
+          font-size: 9px;
+          line-height: 1.3;
+          margin-bottom: 0.08cm;
         }
         .item-name {
           flex-grow: 1;
@@ -376,35 +377,36 @@ const PrintLabel = () => {
   };
 
   const generatePrintContent = (selectedOrdersData: OrderWithItems[]) => {
-    const labelsPerRow = 1;
-    const labelsPerPage = 2;
+    const labelsPerRow = 2;
+    const labelsPerPage = 6;
     
     const labelStyle = `
       <style>
         @page {
           size: A4;
-          margin: 0.5cm;
+          margin: 0.4cm;
         }
         body {
-          font-family: Arial, sans-serif;
+          font-family: 'Sarabun', 'Noto Sans Thai', 'Arial Unicode MS', Arial, sans-serif;
           margin: 0;
           padding: 0;
+          font-size: 12px;
         }
         .labels-container {
           display: grid;
           grid-template-columns: repeat(${labelsPerRow}, 1fr);
-          gap: 0.5cm;
+          gap: 0.3cm;
           width: 100%;
         }
         .label {
-          border: 2px solid #333;
-          padding: 0.5cm;
-          height: 12cm;
+          border: 1.5px solid #333;
+          padding: 0.3cm;
+          height: 8.5cm;
           box-sizing: border-box;
           break-inside: avoid;
           display: flex;
           flex-direction: column;
-          margin-bottom: 0.5cm;
+          margin-bottom: 0.3cm;
         }
         .label-header {
           text-align: center;
@@ -420,19 +422,19 @@ const PrintLabel = () => {
           margin-bottom: 0.4cm;
         }
         .address-title {
-          font-size: 12px;
+          font-size: 10px;
           font-weight: bold;
           background-color: #f0f0f0;
-          padding: 0.2cm;
-          margin-bottom: 0.2cm;
+          padding: 0.15cm;
+          margin-bottom: 0.1cm;
           border: 1px solid #333;
         }
         .address-content {
-          font-size: 11px;
-          line-height: 1.4;
-          padding: 0.2cm;
+          font-size: 9px;
+          line-height: 1.3;
+          padding: 0.15cm;
           border: 1px solid #333;
-          min-height: 2cm;
+          min-height: 1.5cm;
         }
         .sender-address {
           background-color: #f9f9f9;
@@ -444,25 +446,25 @@ const PrintLabel = () => {
           flex-grow: 1;
         }
         .items-title {
-          font-size: 12px;
+          font-size: 10px;
           font-weight: bold;
           background-color: #f0f0f0;
-          padding: 0.2cm;
+          padding: 0.15cm;
           border: 1px solid #333;
-          margin-bottom: 0.2cm;
+          margin-bottom: 0.1cm;
         }
         .items-content {
           border: 1px solid #333;
-          padding: 0.2cm;
+          padding: 0.15cm;
           background-color: white;
-          min-height: 3cm;
+          min-height: 2cm;
         }
         .item-row {
           display: flex;
           justify-content: space-between;
-          font-size: 11px;
-          line-height: 1.4;
-          margin-bottom: 0.1cm;
+          font-size: 9px;
+          line-height: 1.3;
+          margin-bottom: 0.08cm;
         }
         .item-name {
           flex-grow: 1;
@@ -526,9 +528,14 @@ const PrintLabel = () => {
 
     return `
       <!DOCTYPE html>
-      <html>
+      <html lang="th">
         <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <title>Delivery Labels</title>
+          <link rel="preconnect" href="https://fonts.googleapis.com">
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+          <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet">
           ${labelStyle}
         </head>
         <body>
