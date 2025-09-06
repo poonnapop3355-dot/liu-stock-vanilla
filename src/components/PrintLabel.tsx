@@ -245,46 +245,53 @@ const PrintLabel = () => {
         }
         .label {
           border: 1.5px solid #333;
-          padding: 0.3cm;
-          height: 8.5cm;
+          padding: 0.25cm;
+          height: 9cm;
           box-sizing: border-box;
           break-inside: avoid;
           display: flex;
           flex-direction: column;
           margin-bottom: 0.3cm;
+          overflow: hidden;
         }
         .label-header {
           text-align: center;
-          margin-bottom: 0.3cm;
-          padding-bottom: 0.2cm;
+          margin-bottom: 0.2cm;
+          padding-bottom: 0.15cm;
           border-bottom: 1.5px solid #333;
+          flex-shrink: 0;
         }
         .order-code {
-          font-size: 14px;
+          font-size: 13px;
           font-weight: bold;
           word-wrap: break-word;
           overflow-wrap: break-word;
         }
         .address-section {
-          margin-bottom: 0.25cm;
+          margin-bottom: 0.2cm;
+          flex-shrink: 0;
         }
         .address-title {
-          font-size: 10px;
+          font-size: 9px;
           font-weight: bold;
           background-color: #f0f0f0;
-          padding: 0.15cm;
-          margin-bottom: 0.1cm;
+          padding: 0.1cm;
+          margin-bottom: 0.05cm;
           border: 1px solid #333;
         }
         .address-content {
-          font-size: 9px;
-          line-height: 1.3;
-          padding: 0.15cm;
+          font-size: 8px;
+          line-height: 1.2;
+          padding: 0.1cm;
           border: 1px solid #333;
-          min-height: 1.2cm;
+          height: 1.3cm;
           word-wrap: break-word;
           overflow-wrap: break-word;
           hyphens: auto;
+          overflow: hidden;
+          display: -webkit-box;
+          -webkit-line-clamp: 4;
+          -webkit-box-orient: vertical;
         }
         .sender-address {
           background-color: #f9f9f9;
@@ -294,29 +301,34 @@ const PrintLabel = () => {
         }
         .items-section {
           flex-grow: 1;
+          display: flex;
+          flex-direction: column;
+          min-height: 0;
         }
         .items-title {
-          font-size: 10px;
+          font-size: 9px;
           font-weight: bold;
           background-color: #f0f0f0;
-          padding: 0.15cm;
+          padding: 0.1cm;
           border: 1px solid #333;
-          margin-bottom: 0.1cm;
+          margin-bottom: 0.05cm;
+          flex-shrink: 0;
         }
         .items-content {
           border: 1px solid #333;
-          padding: 0.15cm;
+          padding: 0.1cm;
           background-color: white;
-          min-height: 1.8cm;
+          flex-grow: 1;
           word-wrap: break-word;
           overflow-wrap: break-word;
+          overflow: hidden;
         }
         .item-row {
           display: flex;
           justify-content: space-between;
-          font-size: 9px;
-          line-height: 1.3;
-          margin-bottom: 0.08cm;
+          font-size: 8px;
+          line-height: 1.2;
+          margin-bottom: 0.05cm;
         }
         .item-name {
           flex-grow: 1;
@@ -410,46 +422,53 @@ const PrintLabel = () => {
         }
         .label {
           border: 1.5px solid #333;
-          padding: 0.3cm;
-          height: 8.5cm;
+          padding: 0.25cm;
+          height: 9cm;
           box-sizing: border-box;
           break-inside: avoid;
           display: flex;
           flex-direction: column;
           margin-bottom: 0.3cm;
+          overflow: hidden;
         }
         .label-header {
           text-align: center;
-          margin-bottom: 0.3cm;
-          padding-bottom: 0.2cm;
+          margin-bottom: 0.2cm;
+          padding-bottom: 0.15cm;
           border-bottom: 1.5px solid #333;
+          flex-shrink: 0;
         }
         .order-code {
-          font-size: 14px;
+          font-size: 13px;
           font-weight: bold;
           word-wrap: break-word;
           overflow-wrap: break-word;
         }
         .address-section {
-          margin-bottom: 0.25cm;
+          margin-bottom: 0.2cm;
+          flex-shrink: 0;
         }
         .address-title {
-          font-size: 10px;
+          font-size: 9px;
           font-weight: bold;
           background-color: #f0f0f0;
-          padding: 0.15cm;
-          margin-bottom: 0.1cm;
+          padding: 0.1cm;
+          margin-bottom: 0.05cm;
           border: 1px solid #333;
         }
         .address-content {
-          font-size: 9px;
-          line-height: 1.3;
-          padding: 0.15cm;
+          font-size: 8px;
+          line-height: 1.2;
+          padding: 0.1cm;
           border: 1px solid #333;
-          min-height: 1.2cm;
+          height: 1.3cm;
           word-wrap: break-word;
           overflow-wrap: break-word;
           hyphens: auto;
+          overflow: hidden;
+          display: -webkit-box;
+          -webkit-line-clamp: 4;
+          -webkit-box-orient: vertical;
         }
         .sender-address {
           background-color: #f9f9f9;
@@ -459,29 +478,34 @@ const PrintLabel = () => {
         }
         .items-section {
           flex-grow: 1;
+          display: flex;
+          flex-direction: column;
+          min-height: 0;
         }
         .items-title {
-          font-size: 10px;
+          font-size: 9px;
           font-weight: bold;
           background-color: #f0f0f0;
-          padding: 0.15cm;
+          padding: 0.1cm;
           border: 1px solid #333;
-          margin-bottom: 0.1cm;
+          margin-bottom: 0.05cm;
+          flex-shrink: 0;
         }
         .items-content {
           border: 1px solid #333;
-          padding: 0.15cm;
+          padding: 0.1cm;
           background-color: white;
-          min-height: 1.8cm;
+          flex-grow: 1;
           word-wrap: break-word;
           overflow-wrap: break-word;
+          overflow: hidden;
         }
         .item-row {
           display: flex;
           justify-content: space-between;
-          font-size: 9px;
-          line-height: 1.3;
-          margin-bottom: 0.08cm;
+          font-size: 8px;
+          line-height: 1.2;
+          margin-bottom: 0.05cm;
         }
         .item-name {
           flex-grow: 1;
