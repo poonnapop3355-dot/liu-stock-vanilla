@@ -1,20 +1,65 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Package, ShoppingCart, DollarSign, AlertTriangle } from "lucide-react";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const Dashboard = () => {
-  // Mock data - will be replaced with real data from Supabase
-  const stats = {
-    totalProducts: 156,
-    totalSales: 2847,
-    revenue: 125780,
-    lowStockItems: 12
-  };
+  const [stats, setStats] = useState({
+    totalProducts: 0,
+    totalSales: 0,
+    revenue: 0,
+    lowStockItems: 0
+  });
+  const [recentSales, setRecentSales] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const recentSales = [
-    { id: "SAL-20250815-001", customer: "John Doe", amount: 299.99, status: "Shipped" },
-    { id: "SAL-20250815-002", customer: "Jane Smith", amount: 459.50, status: "Pending" },
-    { id: "SAL-20250815-003", customer: "Mike Johnson", amount: 189.00, status: "Delivered" }
-  ];
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      // Fetch total products and low stock items
+      const { data: products } = await supabase
+        .from('products')
+        .select('id, stock_quantity')
+        .eq('status', 'active');
+
+      // Fetch orders for sales and revenue
+      const { data: orders } = await supabase
+        .from('orders')
+        .select('id, total_amount, status, order_code, customer_contact, created_at')
+        .order('created_at', { ascending: false });
+
+      // Calculate stats
+      const totalProducts = products?.length || 0;
+      const lowStockItems = products?.filter(p => p.stock_quantity < 10).length || 0;
+      const totalSales = orders?.length || 0;
+      const revenue = orders?.reduce((sum, order) => sum + Number(order.total_amount), 0) || 0;
+
+      // Get recent sales (last 5)
+      const recentSalesData = orders?.slice(0, 5).map(order => ({
+        id: order.order_code,
+        customer: order.customer_contact,
+        amount: Number(order.total_amount),
+        status: order.status === 'pending' ? 'Pending' : 
+                order.status === 'shipped' ? 'Shipped' : 
+                order.status === 'delivered' ? 'Delivered' : 'Pending'
+      })) || [];
+
+      setStats({
+        totalProducts,
+        totalSales,
+        revenue,
+        lowStockItems
+      });
+      setRecentSales(recentSalesData);
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -69,26 +114,36 @@ const Dashboard = () => {
           <CardTitle>Recent Sales</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {recentSales.map((sale) => (
-              <div key={sale.id} className="flex items-center justify-between p-4 bg-muted rounded-lg">
-                <div>
-                  <p className="font-medium">{sale.id}</p>
-                  <p className="text-sm text-muted-foreground">{sale.customer}</p>
+          {loading ? (
+            <div className="flex items-center justify-center p-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : recentSales.length > 0 ? (
+            <div className="space-y-4">
+              {recentSales.map((sale) => (
+                <div key={sale.id} className="flex items-center justify-between p-4 bg-muted rounded-lg">
+                  <div>
+                    <p className="font-medium">{sale.id}</p>
+                    <p className="text-sm text-muted-foreground">{sale.customer}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-medium">฿{sale.amount.toLocaleString()}</p>
+                    <span className={`text-xs px-2 py-1 rounded-full ${
+                      sale.status === 'Delivered' ? 'bg-success text-success-foreground' :
+                      sale.status === 'Shipped' ? 'bg-primary text-primary-foreground' :
+                      'bg-warning text-warning-foreground'
+                    }`}>
+                      {sale.status}
+                    </span>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="font-medium">฿{sale.amount}</p>
-                  <span className={`text-xs px-2 py-1 rounded-full ${
-                    sale.status === 'Delivered' ? 'bg-success text-success-foreground' :
-                    sale.status === 'Shipped' ? 'bg-primary text-primary-foreground' :
-                    'bg-warning text-warning-foreground'
-                  }`}>
-                    {sale.status}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              No sales data available yet
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
