@@ -240,24 +240,24 @@ const PrintLabel = () => {
         .labels-container {
           display: grid;
           grid-template-columns: repeat(${labelsPerRow}, 1fr);
-          gap: 0.3cm;
+          gap: 0.25cm;
           width: 100%;
         }
         .label {
           border: 1.5px solid #333;
-          padding: 0.25cm;
-          height: 9cm;
+          padding: 0.2cm;
+          height: 7.5cm;
           box-sizing: border-box;
           break-inside: avoid;
           display: flex;
           flex-direction: column;
-          margin-bottom: 0.3cm;
+          margin-bottom: 0.25cm;
           overflow: hidden;
         }
         .label-header {
           text-align: center;
-          margin-bottom: 0.2cm;
-          padding-bottom: 0.15cm;
+          margin-bottom: 0.15cm;
+          padding-bottom: 0.1cm;
           border-bottom: 1.5px solid #333;
           flex-shrink: 0;
         }
@@ -268,7 +268,7 @@ const PrintLabel = () => {
           overflow-wrap: break-word;
         }
         .address-section {
-          margin-bottom: 0.2cm;
+          margin-bottom: 0.15cm;
           flex-shrink: 0;
         }
         .address-title {
@@ -282,9 +282,9 @@ const PrintLabel = () => {
         .address-content {
           font-size: 8px;
           line-height: 1.2;
-          padding: 0.1cm;
+          padding: 0.08cm;
           border: 1px solid #333;
-          height: 1.3cm;
+          height: 1.1cm;
           word-wrap: break-word;
           overflow-wrap: break-word;
           hyphens: auto;
@@ -417,24 +417,24 @@ const PrintLabel = () => {
         .labels-container {
           display: grid;
           grid-template-columns: repeat(${labelsPerRow}, 1fr);
-          gap: 0.3cm;
+          gap: 0.25cm;
           width: 100%;
         }
         .label {
           border: 1.5px solid #333;
-          padding: 0.25cm;
-          height: 9cm;
+          padding: 0.2cm;
+          height: 7.5cm;
           box-sizing: border-box;
           break-inside: avoid;
           display: flex;
           flex-direction: column;
-          margin-bottom: 0.3cm;
+          margin-bottom: 0.25cm;
           overflow: hidden;
         }
         .label-header {
           text-align: center;
-          margin-bottom: 0.2cm;
-          padding-bottom: 0.15cm;
+          margin-bottom: 0.15cm;
+          padding-bottom: 0.1cm;
           border-bottom: 1.5px solid #333;
           flex-shrink: 0;
         }
@@ -445,7 +445,7 @@ const PrintLabel = () => {
           overflow-wrap: break-word;
         }
         .address-section {
-          margin-bottom: 0.2cm;
+          margin-bottom: 0.15cm;
           flex-shrink: 0;
         }
         .address-title {
@@ -459,9 +459,9 @@ const PrintLabel = () => {
         .address-content {
           font-size: 8px;
           line-height: 1.2;
-          padding: 0.1cm;
+          padding: 0.08cm;
           border: 1px solid #333;
-          height: 1.3cm;
+          height: 1.1cm;
           word-wrap: break-word;
           overflow-wrap: break-word;
           hyphens: auto;
