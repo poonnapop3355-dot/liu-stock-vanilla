@@ -237,22 +237,29 @@ const PrintLabel = () => {
           padding: 0;
           font-size: 12px;
         }
+        /* Use inline-block to prevent label splitting across pages */
         .labels-container {
-          display: grid;
-          grid-template-columns: repeat(${labelsPerRow}, 1fr);
-          gap: 0.25cm;
           width: 100%;
+          font-size: 0; /* remove inline-block gaps */
         }
         .label {
+          display: inline-block;
+          vertical-align: top;
+          width: calc((100% - 0.25cm) / 2);
+          height: 7.5cm;
           border: 1.5px solid #333;
           padding: 0.2cm;
-          height: 7.5cm;
+          margin: 0 0.25cm 0.25cm 0;
           box-sizing: border-box;
+          page-break-inside: avoid;
           break-inside: avoid;
+          break-inside: avoid-page;
+          -webkit-region-break-inside: avoid;
+          -webkit-column-break-inside: avoid;
+          overflow: hidden;
           display: flex;
           flex-direction: column;
-          margin-bottom: 0.25cm;
-          overflow: hidden;
+          font-size: 12px; /* reset font size for children */
         }
         .label-header {
           text-align: center;
@@ -343,7 +350,10 @@ const PrintLabel = () => {
           text-align: right;
         }
         .page-break {
-          page-break-before: always;
+          break-before: page;
+          width: 100%;
+          height: 0;
+          display: block;
         }
         @media print {
           .no-print {
@@ -414,22 +424,29 @@ const PrintLabel = () => {
           padding: 0;
           font-size: 12px;
         }
+        /* Use inline-block to prevent label splitting across pages */
         .labels-container {
-          display: grid;
-          grid-template-columns: repeat(${labelsPerRow}, 1fr);
-          gap: 0.25cm;
           width: 100%;
+          font-size: 0; /* remove inline-block gaps */
         }
         .label {
+          display: inline-block;
+          vertical-align: top;
+          width: calc((100% - 0.25cm) / 2);
+          height: 7.5cm;
           border: 1.5px solid #333;
           padding: 0.2cm;
-          height: 7.5cm;
+          margin: 0 0.25cm 0.25cm 0;
           box-sizing: border-box;
+          page-break-inside: avoid;
           break-inside: avoid;
+          break-inside: avoid-page;
+          -webkit-region-break-inside: avoid;
+          -webkit-column-break-inside: avoid;
+          overflow: hidden;
           display: flex;
           flex-direction: column;
-          margin-bottom: 0.25cm;
-          overflow: hidden;
+          font-size: 12px; /* reset font size for children */
         }
         .label-header {
           text-align: center;
@@ -520,7 +537,10 @@ const PrintLabel = () => {
           text-align: right;
         }
         .page-break {
-          page-break-before: always;
+          break-before: page;
+          width: 100%;
+          height: 0;
+          display: block;
         }
         @media print {
           .no-print {
