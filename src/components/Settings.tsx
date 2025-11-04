@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,8 +33,10 @@ const Settings = () => {
   const { theme, setTheme } = useTheme();
   
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Profile State
   const [profile, setProfile] = useState({
@@ -194,6 +196,131 @@ const Settings = () => {
     });
   };
 
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "Invalid file type",
+          description: "Please upload an image file (JPG, PNG, GIF)",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Validate file size (max 2MB)
+      if (file.size > 2 * 1024 * 1024) {
+        toast({
+          title: "File too large",
+          description: "Please upload an image smaller than 2MB",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      setUploading(true);
+
+      // Upload to Supabase Storage
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user?.id}/avatar.${fileExt}`;
+
+      // Delete old avatar if exists
+      if (profile.avatar_url) {
+        await supabase.storage
+          .from('avatars')
+          .remove([`${user?.id}/avatar.${profile.avatar_url.split('.').pop()}`]);
+      }
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+
+      // Update profile with new avatar URL
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: publicUrl })
+        .eq('id', user?.id);
+
+      if (updateError) throw updateError;
+
+      setProfile({ ...profile, avatar_url: publicUrl });
+
+      // Log activity
+      await supabase.rpc('log_user_activity', {
+        p_activity_type: 'update',
+        p_activity_description: 'Uploaded profile picture',
+        p_entity_type: 'profile'
+      });
+
+      toast({
+        title: "Avatar uploaded",
+        description: "Your profile picture has been updated successfully.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Upload failed",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleRemoveAvatar = async () => {
+    try {
+      setUploading(true);
+
+      // Delete from storage
+      if (profile.avatar_url) {
+        const fileName = `${user?.id}/avatar.${profile.avatar_url.split('.').pop()}`;
+        await supabase.storage
+          .from('avatars')
+          .remove([fileName]);
+      }
+
+      // Update profile
+      const { error } = await supabase
+        .from('profiles')
+        .update({ avatar_url: null })
+        .eq('id', user?.id);
+
+      if (error) throw error;
+
+      setProfile({ ...profile, avatar_url: "" });
+
+      // Log activity
+      await supabase.rpc('log_user_activity', {
+        p_activity_type: 'delete',
+        p_activity_description: 'Removed profile picture',
+        p_entity_type: 'profile'
+      });
+
+      toast({
+        title: "Avatar removed",
+        description: "Your profile picture has been removed.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const getInitials = (name: string) => {
     if (!name) return "U";
     return name
@@ -259,11 +386,28 @@ const Settings = () => {
                 <div className="space-y-2">
                   <Label>Profile Picture</Label>
                   <div className="flex gap-2">
-                    <Button variant="outline" size="sm">
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleAvatarUpload}
+                      accept="image/*"
+                      className="hidden"
+                    />
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploading}
+                    >
                       <Upload className="h-4 w-4 mr-2" />
-                      Upload New
+                      {uploading ? "Uploading..." : "Upload New"}
                     </Button>
-                    <Button variant="ghost" size="sm">
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={handleRemoveAvatar}
+                      disabled={uploading || !profile.avatar_url}
+                    >
                       Remove
                     </Button>
                   </div>
