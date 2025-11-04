@@ -203,12 +203,33 @@ const OrderManagement = () => {
     if (!selectedOrder) return;
     
     try {
+      // Auto-transition logic
+      let finalStatus = editStatus;
+      
+      // If tracking number is added and order is pending, auto-change to processing
+      if (editTrackingNumber && !selectedOrder.tracking_number && selectedOrder.status === 'pending') {
+        finalStatus = 'processing';
+        toast({
+          title: "Status Auto-Updated",
+          description: "Status changed to Processing since tracking number was added",
+        });
+      }
+      
+      // If tracking number is added to processing order, suggest shipped
+      if (editTrackingNumber && !selectedOrder.tracking_number && selectedOrder.status === 'processing') {
+        finalStatus = 'shipped';
+        toast({
+          title: "Status Auto-Updated",
+          description: "Status changed to Shipped since tracking number was added",
+        });
+      }
+
       const { error } = await supabase
         .from('orders')
         .update({
           tracking_number: editTrackingNumber,
           delivery_round: editDeliveryRound,
-          status: editStatus
+          status: finalStatus
         })
         .eq('id', selectedOrder.id);
 
@@ -409,9 +430,27 @@ const OrderManagement = () => {
       let successCount = 0;
 
       for (const match of importPreviewData) {
+        // Fetch current order to check status
+        const { data: order } = await supabase
+          .from('orders')
+          .select('status')
+          .eq('id', match.orderId)
+          .single();
+
+        // Auto-transition logic for bulk import
+        let newStatus = order?.status;
+        if (order?.status === 'pending') {
+          newStatus = 'processing';
+        } else if (order?.status === 'processing') {
+          newStatus = 'shipped';
+        }
+
         const { error } = await supabase
           .from('orders')
-          .update({ tracking_number: match.tracking })
+          .update({ 
+            tracking_number: match.tracking,
+            status: newStatus
+          })
           .eq('id', match.orderId);
 
         if (!error) {
@@ -428,7 +467,7 @@ const OrderManagement = () => {
 
       toast({
         title: "Import Complete",
-        description: `Successfully updated ${successCount} orders with tracking numbers.`,
+        description: `Successfully updated ${successCount} orders with tracking numbers. Order statuses were auto-updated based on transitions.`,
       });
     } catch (error) {
       console.error('Import error:', error);
@@ -779,6 +818,17 @@ const OrderManagement = () => {
             <DialogTitle>Edit Order - {selectedOrder?.order_code}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
+            {/* Auto-transition info */}
+            {selectedOrder && !selectedOrder.tracking_number && editTrackingNumber && (
+              <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg text-sm">
+                <p className="font-medium text-primary mb-1">Auto Status Transition</p>
+                <p className="text-muted-foreground">
+                  {selectedOrder.status === 'pending' && 'Adding tracking will change status to Processing'}
+                  {selectedOrder.status === 'processing' && 'Adding tracking will change status to Shipped'}
+                </p>
+              </div>
+            )}
+            
             <div>
               <Label htmlFor="status">Status</Label>
               <Select value={editStatus} onValueChange={setEditStatus}>
