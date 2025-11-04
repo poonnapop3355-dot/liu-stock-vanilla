@@ -14,9 +14,9 @@ const Dashboard = () => {
     revenueGrowth: 0,
     salesGrowth: 0
   });
-  const [recentSales, setRecentSales] = useState([]);
-  const [salesTrend, setSalesTrend] = useState([]);
-  const [categoryStats, setCategoryStats] = useState([]);
+  const [recentSales, setRecentSales] = useState<any[]>([]);
+  const [salesTrend, setSalesTrend] = useState<any[]>([]);
+  const [categoryStats, setCategoryStats] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
