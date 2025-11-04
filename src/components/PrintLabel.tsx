@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Printer, Download, X } from "lucide-react";
+import { Printer, Download, X, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { DatePicker } from "@/components/DatePicker";
@@ -37,6 +37,8 @@ const PrintLabel = () => {
   const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
   const [customRound, setCustomRound] = useState("");
   const [selectedDeliveryDate, setSelectedDeliveryDate] = useState<Date | undefined>(undefined);
+  const [previewMode, setPreviewMode] = useState(false);
+  const [labelsPerPage, setLabelsPerPage] = useState<4 | 6 | 8>(6);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -238,187 +240,44 @@ const PrintLabel = () => {
       return;
     }
 
-    const labelsPerRow = 2;
-    const labelsPerPage = 6;
-    
-    const labelStyle = `
-      <style>
-        @page {
-          size: A4;
-          margin: 0.5cm;
-        }
-        body {
-          font-family: 'Sarabun', 'Noto Sans Thai', 'Arial Unicode MS', Arial, sans-serif;
-          margin: 0;
-          padding: 0;
-          font-size: 12px;
-        }
-        /* Use inline-block to prevent label splitting across pages */
-        .labels-container {
-          width: 100%;
-          font-size: 0; /* remove inline-block gaps */
-        }
-        .label {
-          display: inline-block;
-          vertical-align: top;
-          width: calc(50% - 0.2cm);
-          height: 9cm;
-          border: 1.5px solid #333;
-          padding: 0.2cm;
-          margin: 0 0.2cm 0.2cm 0;
-          box-sizing: border-box;
-          page-break-inside: avoid;
-          break-inside: avoid;
-          overflow: hidden;
-          font-size: 12px; /* reset font size for children */
-        }
-        .label:nth-child(2n) {
-          margin-right: 0;
-        }
-        .label-header {
-          text-align: center;
-          margin-bottom: 0.15cm;
-          padding-bottom: 0.1cm;
-          border-bottom: 1.5px solid #333;
-        }
-        .order-code {
-          font-size: 13px;
-          font-weight: bold;
-          word-wrap: break-word;
-          overflow-wrap: break-word;
-        }
-        .address-section {
-          margin-bottom: 0.15cm;
-        }
-        .address-title {
-          font-size: 9px;
-          font-weight: bold;
-          background-color: #f0f0f0;
-          padding: 0.1cm;
-          margin-bottom: 0.05cm;
-          border: 1px solid #333;
-        }
-        .address-content {
-          font-size: 8px;
-          line-height: 1.2;
-          padding: 0.08cm;
-          border: 1px solid #333;
-          height: 1.1cm;
-          word-wrap: break-word;
-          overflow-wrap: break-word;
-          hyphens: auto;
-          overflow: hidden;
-          display: -webkit-box;
-          -webkit-line-clamp: 4;
-          -webkit-box-orient: vertical;
-        }
-        .sender-address {
-          background-color: #f9f9f9;
-        }
-        .receiver-address {
-          background-color: white;
-        }
-        .items-section {
-          margin-top: 0.1cm;
-        }
-        .items-title {
-          font-size: 9px;
-          font-weight: bold;
-          background-color: #f0f0f0;
-          padding: 0.1cm;
-          border: 1px solid #333;
-          margin-bottom: 0.05cm;
-        }
-        .items-content {
-          border: 1px solid #333;
-          padding: 0.1cm;
-          background-color: white;
-          min-height: 2.5cm;
-          word-wrap: break-word;
-          overflow-wrap: break-word;
-          overflow: hidden;
-        }
-        .item-row {
-          display: flex;
-          justify-content: space-between;
-          font-size: 8px;
-          line-height: 1.2;
-          margin-bottom: 0.05cm;
-        }
-        .item-name {
-          flex-grow: 1;
-          margin-right: 0.2cm;
-          word-wrap: break-word;
-          overflow-wrap: break-word;
-          max-width: 70%;
-        }
-        .item-qty {
-          font-weight: bold;
-          min-width: 1cm;
-          text-align: right;
-        }
-        .page-break {
-          break-before: page;
-          width: 100%;
-          height: 0;
-          display: block;
-        }
-        @media print {
-          .no-print {
-            display: none;
-          }
-        }
-      </style>
-    `;
-
-    const senderAddress = "หลิวเหล่าซือ 145 Summer Hotel ถ.ปฏิพัทธ์ ต.ตลาดเหนือ อ.เมือง จ.ภูเก็ต 83000 0647545296";
-    
-    const labelsHtml = selectedOrdersData.map((order, index) => {
-      const receiverAddress = order.customer_contact || '';
-      const shouldPageBreak = index > 0 && index % labelsPerPage === 0;
-      
-      const itemsHtml = order.items.map(item => `
-        <div class="item-row">
-          <div class="item-name">${item.product_name}</div>
-          <div class="item-qty">จำนวน ${item.quantity}</div>
-        </div>
-      `).join('');
-      
-      return `
-        ${shouldPageBreak ? '<div class="page-break"></div>' : ''}
-        <div class="label">
-          <div class="label-header">
-            <div class="order-code">ORDER-${order.order_code}</div>
-          </div>
-          
-          <div class="address-section">
-            <div class="address-title">ที่อยู่ผู้ส่ง (FROM)</div>
-            <div class="address-content sender-address">${senderAddress}</div>
-          </div>
-          
-          <div class="address-section">
-            <div class="address-title">ที่อยู่ผู้รับ (TO)</div>
-            <div class="address-content receiver-address">${receiverAddress}</div>
-          </div>
-          
-          <div class="items-section">
-            <div class="items-title">รายการสั่งซื้อ (ORDER ITEMS)</div>
-            <div class="items-content">
-              ${itemsHtml}
-            </div>
-          </div>
-        </div>
-      `;
-    }).join('');
-
     const printContent = generatePrintContent(selectedOrdersData);
     printWindow.document.write(printContent);
     printWindow.document.close();
   };
 
+  const getLayoutConfig = (perPage: 4 | 6 | 8) => {
+    switch (perPage) {
+      case 4:
+        return {
+          labelsPerRow: 2,
+          labelsPerPage: 4,
+          labelWidth: 'calc(50% - 0.3cm)',
+          labelHeight: '13.5cm',
+          margin: '0 0.3cm 0.3cm 0'
+        };
+      case 8:
+        return {
+          labelsPerRow: 2,
+          labelsPerPage: 8,
+          labelWidth: 'calc(50% - 0.15cm)',
+          labelHeight: '6.5cm',
+          margin: '0 0.15cm 0.15cm 0'
+        };
+      case 6:
+      default:
+        return {
+          labelsPerRow: 2,
+          labelsPerPage: 6,
+          labelWidth: 'calc(50% - 0.2cm)',
+          labelHeight: '9cm',
+          margin: '0 0.2cm 0.2cm 0'
+        };
+    }
+  };
+
   const generatePrintContent = (selectedOrdersData: OrderWithItems[]) => {
-    const labelsPerRow = 2;
-    const labelsPerPage = 6;
+    const layoutConfig = getLayoutConfig(labelsPerPage);
+    const { labelsPerRow, labelsPerPage: perPage, labelWidth, labelHeight, margin } = layoutConfig;
     
     const labelStyle = `
       <style>
@@ -440,11 +299,11 @@ const PrintLabel = () => {
         .label {
           display: inline-block;
           vertical-align: top;
-          width: calc(50% - 0.2cm);
-          height: 9cm;
+          width: ${labelWidth};
+          height: ${labelHeight};
           border: 1.5px solid #333;
           padding: 0.2cm;
-          margin: 0 0.2cm 0.2cm 0;
+          margin: ${margin};
           box-sizing: border-box;
           page-break-inside: avoid;
           break-inside: avoid;
@@ -554,7 +413,7 @@ const PrintLabel = () => {
     
     const labelsHtml = selectedOrdersData.map((order, index) => {
       const receiverAddress = order.customer_contact || '';
-      const shouldPageBreak = index > 0 && index % labelsPerPage === 0;
+      const shouldPageBreak = index > 0 && index % perPage === 0;
       
       const itemsHtml = order.items.map(item => `
         <div class="item-row">
@@ -618,23 +477,62 @@ const PrintLabel = () => {
 
   const filteredOrders = getFilteredOrders();
 
+  const togglePreview = async () => {
+    if (!previewMode && selectedOrders.length > 0) {
+      await fetchOrderItems(selectedOrders);
+    }
+    setPreviewMode(!previewMode);
+  };
+
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center flex-wrap gap-4">
         <h1 className="text-3xl font-bold">Print Labels</h1>
-        <Button onClick={generatePrintView} disabled={selectedOrders.length === 0}>
-          <Printer className="h-4 w-4 mr-2" />
-          Print Labels ({selectedOrders.length})
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={togglePreview} 
+            disabled={selectedOrders.length === 0}
+          >
+            {previewMode ? (
+              <>
+                <EyeOff className="h-4 w-4 mr-2" />
+                Hide Preview
+              </>
+            ) : (
+              <>
+                <Eye className="h-4 w-4 mr-2" />
+                Preview ({selectedOrders.length})
+              </>
+            )}
+          </Button>
+          <Button onClick={generatePrintView} disabled={selectedOrders.length === 0}>
+            <Printer className="h-4 w-4 mr-2" />
+            Print Labels ({selectedOrders.length})
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Delivery Round Selection */}
+        {/* Filters and Layout Settings */}
         <Card>
           <CardHeader>
-            <CardTitle>Filters</CardTitle>
+            <CardTitle>Filters & Layout</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div>
+              <Label>Labels Per Page</Label>
+              <Select value={labelsPerPage.toString()} onValueChange={(value) => setLabelsPerPage(parseInt(value) as 4 | 6 | 8)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="4">4 labels (2x2) - Large</SelectItem>
+                  <SelectItem value="6">6 labels (2x3) - Standard</SelectItem>
+                  <SelectItem value="8">8 labels (2x4) - Compact</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <div>
               <Label>Delivery Date</Label>
               <div className="flex gap-2">
@@ -755,6 +653,76 @@ const PrintLabel = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Preview Section */}
+      {previewMode && ordersWithItems.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Label Preview ({labelsPerPage} labels per page)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="border rounded-lg p-4 bg-background">
+              <div 
+                className="grid gap-4" 
+                style={{ 
+                  gridTemplateColumns: 'repeat(2, 1fr)',
+                }}
+              >
+                {ordersWithItems.map((order) => {
+                  const senderAddress = "หลิวเหล่าซือ 145 Summer Hotel ถ.ปฏิพัทธ์ ต.ตลาดเหนือ อ.เมือง จ.ภูเก็ต 83000 0647545296";
+                  const receiverAddress = order.customer_contact || '';
+                  
+                  return (
+                    <div 
+                      key={order.id} 
+                      className="border-2 border-border rounded p-3 text-xs"
+                      style={{
+                        aspectRatio: labelsPerPage === 4 ? '1/1.35' : labelsPerPage === 8 ? '1/0.65' : '1/0.9'
+                      }}
+                    >
+                      <div className="text-center border-b border-border pb-2 mb-2">
+                        <div className="font-bold text-sm">ORDER-{order.order_code}</div>
+                      </div>
+                      
+                      <div className="mb-2">
+                        <div className="text-[10px] font-bold bg-muted px-2 py-1 mb-1 border border-border">
+                          ที่อยู่ผู้ส่ง (FROM)
+                        </div>
+                        <div className="text-[9px] leading-tight px-2 py-1 border border-border bg-muted/30 line-clamp-3">
+                          {senderAddress}
+                        </div>
+                      </div>
+                      
+                      <div className="mb-2">
+                        <div className="text-[10px] font-bold bg-muted px-2 py-1 mb-1 border border-border">
+                          ที่อยู่ผู้รับ (TO)
+                        </div>
+                        <div className="text-[9px] leading-tight px-2 py-1 border border-border line-clamp-3">
+                          {receiverAddress}
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <div className="text-[10px] font-bold bg-muted px-2 py-1 mb-1 border border-border">
+                          รายการสั่งซื้อ (ORDER ITEMS)
+                        </div>
+                        <div className="border border-border px-2 py-1 text-[9px] space-y-1">
+                          {order.items.map((item, idx) => (
+                            <div key={idx} className="flex justify-between">
+                              <span className="truncate mr-2">{item.product_name}</span>
+                              <span className="font-bold whitespace-nowrap">จำนวน {item.quantity}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
