@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Search, Download, Upload, Edit, Plus, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { customerSchema, sanitizeCSVValue, formatZodError } from "@/lib/validationSchemas";
 
 interface Customer {
   id: string;
@@ -89,9 +90,21 @@ const CRMManagement = () => {
 
   const handleAddCustomer = async () => {
     try {
+      // Validate input data
+      const validationResult = customerSchema.safeParse(formData);
+      
+      if (!validationResult.success) {
+        toast({
+          title: "Validation Error",
+          description: formatZodError(validationResult.error),
+          variant: "destructive"
+        });
+        return;
+      }
+
       const { error } = await supabase
         .from('customers')
-        .insert(formData);
+        .insert([validationResult.data]);
 
       if (error) throw error;
 
@@ -116,9 +129,21 @@ const CRMManagement = () => {
     if (!selectedCustomer) return;
 
     try {
+      // Validate input data
+      const validationResult = customerSchema.safeParse(formData);
+      
+      if (!validationResult.success) {
+        toast({
+          title: "Validation Error",
+          description: formatZodError(validationResult.error),
+          variant: "destructive"
+        });
+        return;
+      }
+
       const { error } = await supabase
         .from('customers')
-        .update(formData)
+        .update(validationResult.data)
         .eq('id', selectedCustomer.id);
 
       if (error) throw error;
@@ -201,14 +226,15 @@ const CRMManagement = () => {
   };
 
   const exportToCSV = () => {
+    // Sanitize CSV values to prevent injection attacks
     const csvContent = [
       ['Name', 'Phone', 'Address', 'Full Contact', 'Notes', 'Created Date'].join(','),
       ...filteredCustomers.map(customer => [
-        `"${(customer.name || '').replace(/"/g, '""')}"`,
-        `"${(customer.phone || '').replace(/"/g, '""')}"`,
-        `"${(customer.address || '').replace(/"/g, '""')}"`,
-        `"${customer.customer_contact.replace(/"/g, '""')}"`,
-        `"${(customer.notes || '').replace(/"/g, '""')}"`,
+        `"${sanitizeCSVValue((customer.name || '').replace(/"/g, '""'))}"`,
+        `"${sanitizeCSVValue((customer.phone || '').replace(/"/g, '""'))}"`,
+        `"${sanitizeCSVValue((customer.address || '').replace(/"/g, '""'))}"`,
+        `"${sanitizeCSVValue(customer.customer_contact.replace(/"/g, '""'))}"`,
+        `"${sanitizeCSVValue((customer.notes || '').replace(/"/g, '""'))}"`,
         customer.created_at.split('T')[0]
       ].join(','))
     ].join('\n');
@@ -228,6 +254,17 @@ const CRMManagement = () => {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    // Enforce file size limit (5MB)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      toast({
+        title: "Error",
+        description: "File size exceeds 5MB limit",
+        variant: "destructive"
+      });
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = async (e) => {
       const csv = e.target?.result as string;
@@ -236,10 +273,12 @@ const CRMManagement = () => {
       
       try {
         const customersToImport = [];
+        const validationErrors: string[] = [];
+        
         for (let i = 1; i < lines.length; i++) {
           if (!lines[i].trim()) continue;
           
-          const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
+          const values = lines[i].split(',').map(v => v.trim().replace(/"/g, '').replace(/^'/, ''));
           const customer = {
             customer_contact: values[3] || '', // Full Contact
             name: values[0] || '',
@@ -247,6 +286,13 @@ const CRMManagement = () => {
             address: values[2] || '',
             notes: values[4] || ''
           };
+
+          // Validate each row before importing
+          const validationResult = customerSchema.safeParse(customer);
+          if (!validationResult.success) {
+            validationErrors.push(`Row ${i}: ${formatZodError(validationResult.error)}`);
+            continue;
+          }
           
           if (customer.customer_contact) {
             customersToImport.push(customer);

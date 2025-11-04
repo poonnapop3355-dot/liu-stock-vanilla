@@ -13,6 +13,7 @@ import { Edit, Trash2, Plus, Search, Download, Upload, Book, Eye, BookOpen, User
 import { DatePicker } from "@/components/DatePicker";
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { bookSchema, authorSchema, categorySchema, formatZodError } from "@/lib/validationSchemas";
 
 interface Book {
   id: string;
@@ -121,11 +122,23 @@ const BookManagement = () => {
 
   const handleAddBook = async () => {
     try {
+      // Validate input data
+      const validationResult = bookSchema.safeParse(newBook);
+      
+      if (!validationResult.success) {
+        toast({
+          title: "Validation Error",
+          description: formatZodError(validationResult.error),
+          variant: "destructive"
+        });
+        return;
+      }
+
       const { data, error } = await supabase.from('books').insert([{
-        ...newBook,
-        price: parseFloat(newBook.price),
-        stock_quantity: parseInt(newBook.stock_quantity),
-        pages: newBook.pages ? parseInt(newBook.pages) : null,
+        ...validationResult.data,
+        price: parseFloat(validationResult.data.price),
+        stock_quantity: parseInt(validationResult.data.stock_quantity),
+        pages: validationResult.data.pages ? parseInt(validationResult.data.pages) : null,
         publication_date: newBook.publication_date || null
       }]).select();
 
@@ -147,8 +160,20 @@ const BookManagement = () => {
 
   const handleAddAuthor = async () => {
     try {
+      // Validate input data
+      const validationResult = authorSchema.safeParse(newAuthor);
+      
+      if (!validationResult.success) {
+        toast({
+          title: "Validation Error",
+          description: formatZodError(validationResult.error),
+          variant: "destructive"
+        });
+        return;
+      }
+
       const { data, error } = await supabase.from('authors').insert([{
-        ...newAuthor,
+        ...validationResult.data,
         birth_date: newAuthor.birth_date.toISOString().split('T')[0]
       }]).select();
 
@@ -165,7 +190,19 @@ const BookManagement = () => {
 
   const handleAddCategory = async () => {
     try {
-      const { data, error } = await supabase.from('book_categories').insert([newCategory]).select();
+      // Validate input data
+      const validationResult = categorySchema.safeParse(newCategory);
+      
+      if (!validationResult.success) {
+        toast({
+          title: "Validation Error",
+          description: formatZodError(validationResult.error),
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const { data, error } = await supabase.from('book_categories').insert([validationResult.data]).select();
 
       if (error) throw error;
 

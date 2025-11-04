@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Edit, Trash2, Download, Upload, Search } from "lucide-react";
+import { productSchema, sanitizeCSVValue, formatZodError } from "@/lib/validationSchemas";
 
 const ProductManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");

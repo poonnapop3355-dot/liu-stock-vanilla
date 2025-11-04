@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { UserPlus, Edit, Trash2, Search, Mail } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { userCreationSchema, formatZodError } from "@/lib/validationSchemas";
 
 interface User {
   id: string;
@@ -98,6 +99,17 @@ const UserManagement = () => {
 
   const handleAddUser = async () => {
     try {
+      // Validate input
+      const validationResult = userCreationSchema.safeParse(newUser);
+      if (!validationResult.success) {
+        toast({
+          title: "Validation Error",
+          description: formatZodError(validationResult.error),
+          variant: "destructive"
+        });
+        return;
+      }
+
       // Create auth user
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: newUser.email,

@@ -26,6 +26,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useTheme } from "next-themes";
+import { userProfileSchema, passwordChangeSchema, formatZodError } from "@/lib/validationSchemas";
 
 const Settings = () => {
   const { toast } = useToast();
@@ -92,6 +93,18 @@ const Settings = () => {
     try {
       setLoading(true);
       
+      // Validate profile data
+      const validationResult = userProfileSchema.safeParse(profile);
+      if (!validationResult.success) {
+        toast({
+          title: "Validation Error",
+          description: formatZodError(validationResult.error),
+          variant: "destructive"
+        });
+        setLoading(false);
+        return;
+      }
+      
       const { error } = await supabase
         .from('profiles')
         .update({
@@ -126,19 +139,12 @@ const Settings = () => {
   };
 
   const handleChangePassword = async () => {
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
+    // Validate password data
+    const validationResult = passwordChangeSchema.safeParse(passwordData);
+    if (!validationResult.success) {
       toast({
-        title: "Passwords don't match",
-        description: "Please make sure your new passwords match.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (passwordData.newPassword.length < 6) {
-      toast({
-        title: "Password too short",
-        description: "Password must be at least 6 characters long.",
+        title: "Validation Error",
+        description: formatZodError(validationResult.error),
         variant: "destructive"
       });
       return;
