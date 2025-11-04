@@ -261,11 +261,11 @@ const PrintLabel = () => {
         .label {
           display: inline-block;
           vertical-align: top;
-          width: calc(50% - 0.15cm);
-          height: 9.2cm;
+          width: calc(50% - 0.2cm);
+          height: 9cm;
           border: 1.5px solid #333;
           padding: 0.2cm;
-          margin: 0 0.3cm 0.3cm 0;
+          margin: 0 0.2cm 0.2cm 0;
           box-sizing: border-box;
           page-break-inside: avoid;
           break-inside: avoid;
@@ -440,11 +440,11 @@ const PrintLabel = () => {
         .label {
           display: inline-block;
           vertical-align: top;
-          width: calc(50% - 0.15cm);
-          height: 9.2cm;
+          width: calc(50% - 0.2cm);
+          height: 9cm;
           border: 1.5px solid #333;
           padding: 0.2cm;
-          margin: 0 0.3cm 0.3cm 0;
+          margin: 0 0.2cm 0.2cm 0;
           box-sizing: border-box;
           page-break-inside: avoid;
           break-inside: avoid;
