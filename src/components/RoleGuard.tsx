@@ -33,14 +33,24 @@ const RoleGuard = ({ children, requiredRole = 'staff', fallback }: RoleGuardProp
       const { data, error } = await supabase
         .from('user_roles')
         .select('role')
-        .eq('user_id', user.id)
-        .single();
+        .eq('user_id', user.id);
       
       if (error) {
         console.error('Error fetching user role:', error);
-        setUserRole('staff'); // Default to staff role
+        setUserRole('staff');
+      } else if (data && data.length > 0) {
+        // If user has admin role, set that as primary
+        // Otherwise, set staff if they have it, or default to staff
+        const roles = data.map(r => r.role);
+        if (roles.includes('admin')) {
+          setUserRole('admin');
+        } else if (roles.includes('staff')) {
+          setUserRole('staff');
+        } else {
+          setUserRole('staff');
+        }
       } else {
-        setUserRole(data?.role || 'staff');
+        setUserRole('staff');
       }
     } catch (error) {
       console.error('Error fetching user role:', error);
