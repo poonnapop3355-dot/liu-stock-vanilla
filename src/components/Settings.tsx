@@ -1,124 +1,230 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
   Settings as SettingsIcon, 
-  Store, 
+  User, 
+  Lock, 
   Bell, 
   Palette, 
   Shield, 
-  Database, 
   Mail,
-  DollarSign,
-  Clock,
-  Globe
+  Save,
+  Upload,
+  Eye,
+  EyeOff
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { useTheme } from "next-themes";
 
 const Settings = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const { theme, setTheme } = useTheme();
   
-  // Business Settings State
-  const [businessSettings, setBusinessSettings] = useState({
-    companyName: "Liu Stock",
-    address: "123 Business Street, City, State 12345",
-    phone: "+1 (555) 123-4567",
-    email: "contact@liustock.com",
-    website: "www.liustock.com",
-    taxId: "123-45-6789",
-    currency: "USD",
-    timezone: "America/New_York"
+  const [loading, setLoading] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  
+  // Profile State
+  const [profile, setProfile] = useState({
+    full_name: "",
+    email: "",
+    avatar_url: ""
   });
 
-  // System Settings State
-  const [systemSettings, setSystemSettings] = useState({
-    enableNotifications: true,
-    enableEmailAlerts: true,
-    enableSMSAlerts: false,
-    autoBackup: true,
-    lowStockThreshold: 10,
-    orderEmailTemplate: "Dear customer, your order #{orderNumber} has been processed.",
-    enableTwoFactor: false,
-    sessionTimeout: 30
+  // Password Change State
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: ""
   });
 
-  // Theme Settings State
-  const [themeSettings, setThemeSettings] = useState({
-    theme: "light",
-    primaryColor: "blue",
-    sidebarCollapsed: false,
-    showAnimations: true,
-    compactMode: false
+  // Notification Settings State
+  const [notificationSettings, setNotificationSettings] = useState({
+    emailNotifications: true,
+    orderAlerts: true,
+    stockAlerts: true,
+    systemUpdates: false
   });
 
-  const handleSaveBusinessSettings = () => {
-    // In a real app, save to backend/database
+  useEffect(() => {
+    if (user) {
+      fetchProfile();
+    }
+  }, [user]);
+
+  const fetchProfile = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user?.id)
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        setProfile({
+          full_name: data.full_name || "",
+          email: data.email || user?.email || "",
+          avatar_url: data.avatar_url || ""
+        });
+      }
+    } catch (error: any) {
+      console.error('Error fetching profile:', error);
+    }
+  };
+
+  const handleUpdateProfile = async () => {
+    try {
+      setLoading(true);
+      
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          full_name: profile.full_name,
+          email: profile.email,
+          avatar_url: profile.avatar_url
+        })
+        .eq('id', user?.id);
+
+      if (error) throw error;
+
+      // Log activity
+      await supabase.rpc('log_user_activity', {
+        p_activity_type: 'update',
+        p_activity_description: 'Updated profile settings',
+        p_entity_type: 'profile'
+      });
+
+      toast({
+        title: "Profile updated",
+        description: "Your profile has been updated successfully.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      toast({
+        title: "Passwords don't match",
+        description: "Please make sure your new passwords match.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (passwordData.newPassword.length < 6) {
+      toast({
+        title: "Password too short",
+        description: "Password must be at least 6 characters long.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const { error } = await supabase.auth.updateUser({
+        password: passwordData.newPassword
+      });
+
+      if (error) throw error;
+
+      // Log activity
+      await supabase.rpc('log_user_activity', {
+        p_activity_type: 'update',
+        p_activity_description: 'Changed password',
+        p_entity_type: 'security'
+      });
+
+      setPasswordData({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: ""
+      });
+
+      toast({
+        title: "Password changed",
+        description: "Your password has been updated successfully.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error changing password",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveNotifications = async () => {
+    // In a real app, save to user preferences table
     toast({
-      title: "Business settings saved",
-      description: "Your business information has been updated successfully.",
+      title: "Preferences saved",
+      description: "Your notification preferences have been updated.",
+    });
+
+    // Log activity
+    await supabase.rpc('log_user_activity', {
+      p_activity_type: 'update',
+      p_activity_description: 'Updated notification settings',
+      p_entity_type: 'settings'
     });
   };
 
-  const handleSaveSystemSettings = () => {
-    // In a real app, save to backend/database
-    toast({
-      title: "System settings saved",
-      description: "Your system preferences have been updated successfully.",
-    });
-  };
-
-  const handleSaveThemeSettings = () => {
-    // In a real app, save to backend/database and apply theme
-    toast({
-      title: "Theme settings saved",
-      description: "Your appearance preferences have been updated successfully.",
-    });
-  };
-
-  const handleExportData = () => {
-    toast({
-      title: "Data export started",
-      description: "Your data export will be ready for download shortly.",
-    });
-  };
-
-  const handleBackupNow = () => {
-    toast({
-      title: "Backup initiated",
-      description: "System backup has been started and will complete in a few minutes.",
-    });
+  const getInitials = (name: string) => {
+    if (!name) return "U";
+    return name
+      .split(' ')
+      .map(word => word.charAt(0))
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
   };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Settings</h1>
-          <p className="text-muted-foreground">Manage your application preferences and configuration</p>
+          <h1 className="text-3xl font-bold flex items-center gap-3">
+            <SettingsIcon className="h-8 w-8" />
+            Settings
+          </h1>
+          <p className="text-muted-foreground">Manage your account and preferences</p>
         </div>
-        <Badge variant="secondary" className="flex items-center gap-2">
-          <SettingsIcon className="h-4 w-4" />
-          Admin Panel
-        </Badge>
       </div>
 
-      <Tabs defaultValue="business" className="space-y-6">
+      <Tabs defaultValue="profile" className="space-y-6">
         <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="business" className="flex items-center gap-2">
-            <Store className="h-4 w-4" />
-            Business
+          <TabsTrigger value="profile" className="flex items-center gap-2">
+            <User className="h-4 w-4" />
+            Profile
           </TabsTrigger>
-          <TabsTrigger value="system" className="flex items-center gap-2">
-            <Database className="h-4 w-4" />
-            System
+          <TabsTrigger value="security" className="flex items-center gap-2">
+            <Lock className="h-4 w-4" />
+            Security
           </TabsTrigger>
           <TabsTrigger value="notifications" className="flex items-center gap-2">
             <Bell className="h-4 w-4" />
@@ -130,184 +236,200 @@ const Settings = () => {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="business" className="space-y-6">
+        {/* Profile Tab */}
+        <TabsContent value="profile" className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Store className="h-5 w-5" />
-                Business Information
+                <User className="h-5 w-5" />
+                Personal Information
               </CardTitle>
               <CardDescription>
-                Update your company details and business configuration
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="companyName">Company Name</Label>
-                  <Input
-                    id="companyName"
-                    value={businessSettings.companyName}
-                    onChange={(e) => setBusinessSettings({ ...businessSettings, companyName: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="taxId">Tax ID</Label>
-                  <Input
-                    id="taxId"
-                    value={businessSettings.taxId}
-                    onChange={(e) => setBusinessSettings({ ...businessSettings, taxId: e.target.value })}
-                  />
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="address">Address</Label>
-                <Textarea
-                  id="address"
-                  value={businessSettings.address}
-                  onChange={(e) => setBusinessSettings({ ...businessSettings, address: e.target.value })}
-                />
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone</Label>
-                  <Input
-                    id="phone"
-                    value={businessSettings.phone}
-                    onChange={(e) => setBusinessSettings({ ...businessSettings, phone: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={businessSettings.email}
-                    onChange={(e) => setBusinessSettings({ ...businessSettings, email: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="website">Website</Label>
-                  <Input
-                    id="website"
-                    value={businessSettings.website}
-                    onChange={(e) => setBusinessSettings({ ...businessSettings, website: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="currency">Default Currency</Label>
-                  <Select value={businessSettings.currency} onValueChange={(value) => setBusinessSettings({ ...businessSettings, currency: value })}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="USD">USD - US Dollar</SelectItem>
-                      <SelectItem value="EUR">EUR - Euro</SelectItem>
-                      <SelectItem value="GBP">GBP - British Pound</SelectItem>
-                      <SelectItem value="JPY">JPY - Japanese Yen</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="timezone">Timezone</Label>
-                  <Select value={businessSettings.timezone} onValueChange={(value) => setBusinessSettings({ ...businessSettings, timezone: value })}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="America/New_York">Eastern Time</SelectItem>
-                      <SelectItem value="America/Chicago">Central Time</SelectItem>
-                      <SelectItem value="America/Denver">Mountain Time</SelectItem>
-                      <SelectItem value="America/Los_Angeles">Pacific Time</SelectItem>
-                      <SelectItem value="UTC">UTC</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <Button onClick={handleSaveBusinessSettings}>Save Business Settings</Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="system" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Database className="h-5 w-5" />
-                System Configuration
-              </CardTitle>
-              <CardDescription>
-                Configure system behavior and operational settings
+                Update your profile information and photo
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <Label>Automatic Backup</Label>
-                    <p className="text-sm text-muted-foreground">Enable daily automatic backups</p>
+              <div className="flex items-center gap-6">
+                <Avatar className="h-24 w-24">
+                  <AvatarImage src={profile.avatar_url} />
+                  <AvatarFallback className="text-2xl bg-gradient-primary text-primary-foreground">
+                    {getInitials(profile.full_name)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="space-y-2">
+                  <Label>Profile Picture</Label>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm">
+                      <Upload className="h-4 w-4 mr-2" />
+                      Upload New
+                    </Button>
+                    <Button variant="ghost" size="sm">
+                      Remove
+                    </Button>
                   </div>
-                  <Switch
-                    checked={systemSettings.autoBackup}
-                    onCheckedChange={(checked) => setSystemSettings({ ...systemSettings, autoBackup: checked })}
-                  />
-                </div>
-
-                <Separator />
-
-                <div className="space-y-2">
-                  <Label htmlFor="lowStockThreshold">Low Stock Alert Threshold</Label>
-                  <Input
-                    id="lowStockThreshold"
-                    type="number"
-                    value={systemSettings.lowStockThreshold}
-                    onChange={(e) => setSystemSettings({ ...systemSettings, lowStockThreshold: parseInt(e.target.value) })}
-                  />
-                  <p className="text-sm text-muted-foreground">Alert when product stock falls below this number</p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="sessionTimeout">Session Timeout (minutes)</Label>
-                  <Input
-                    id="sessionTimeout"
-                    type="number"
-                    value={systemSettings.sessionTimeout}
-                    onChange={(e) => setSystemSettings({ ...systemSettings, sessionTimeout: parseInt(e.target.value) })}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="orderEmailTemplate">Order Email Template</Label>
-                  <Textarea
-                    id="orderEmailTemplate"
-                    value={systemSettings.orderEmailTemplate}
-                    onChange={(e) => setSystemSettings({ ...systemSettings, orderEmailTemplate: e.target.value })}
-                    placeholder="Email template for order confirmations..."
-                  />
+                  <p className="text-xs text-muted-foreground">
+                    JPG, PNG or GIF. Max size 2MB.
+                  </p>
                 </div>
               </div>
 
-              <div className="flex gap-4">
-                <Button onClick={handleSaveSystemSettings}>Save System Settings</Button>
-                <Button variant="outline" onClick={handleBackupNow}>
-                  <Database className="mr-2 h-4 w-4" />
-                  Backup Now
-                </Button>
-                <Button variant="outline" onClick={handleExportData}>
-                  <Globe className="mr-2 h-4 w-4" />
-                  Export Data
-                </Button>
+              <Separator />
+
+              <div className="grid gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="full_name">Full Name</Label>
+                  <Input
+                    id="full_name"
+                    value={profile.full_name}
+                    onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
+                    placeholder="Enter your full name"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email Address</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={profile.email}
+                    onChange={(e) => setProfile({ ...profile, email: e.target.value })}
+                    placeholder="your.email@example.com"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    This is your account email address
+                  </p>
+                </div>
+              </div>
+
+              <Button onClick={handleUpdateProfile} disabled={loading}>
+                <Save className="h-4 w-4 mr-2" />
+                {loading ? "Saving..." : "Save Changes"}
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Security Tab */}
+        <TabsContent value="security" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Lock className="h-5 w-5" />
+                Change Password
+              </CardTitle>
+              <CardDescription>
+                Update your password to keep your account secure
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="currentPassword">Current Password</Label>
+                <div className="relative">
+                  <Input
+                    id="currentPassword"
+                    type={showCurrentPassword ? "text" : "password"}
+                    value={passwordData.currentPassword}
+                    onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                    placeholder="Enter current password"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3"
+                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                  >
+                    {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="space-y-2">
+                <Label htmlFor="newPassword">New Password</Label>
+                <div className="relative">
+                  <Input
+                    id="newPassword"
+                    type={showNewPassword ? "text" : "password"}
+                    value={passwordData.newPassword}
+                    onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                    placeholder="Enter new password"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                  >
+                    {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  value={passwordData.confirmPassword}
+                  onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                  placeholder="Confirm new password"
+                />
+              </div>
+
+              <Button onClick={handleChangePassword} disabled={loading}>
+                <Shield className="h-4 w-4 mr-2" />
+                {loading ? "Updating..." : "Update Password"}
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="h-5 w-5" />
+                Security Status
+              </CardTitle>
+              <CardDescription>
+                Overview of your account security
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <Lock className="h-4 w-4 text-green-600" />
+                    <Label>Password Protection</Label>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Your account is protected with a password
+                  </p>
+                </div>
+                <Badge variant="default" className="bg-green-600">Active</Badge>
+              </div>
+
+              <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <Mail className="h-4 w-4 text-blue-600" />
+                    <Label>Email Verified</Label>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {user?.email_confirmed_at ? "Your email is verified" : "Please verify your email"}
+                  </p>
+                </div>
+                <Badge variant={user?.email_confirmed_at ? "default" : "secondary"} 
+                       className={user?.email_confirmed_at ? "bg-blue-600" : ""}>
+                  {user?.email_confirmed_at ? "Verified" : "Pending"}
+                </Badge>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
+        {/* Notifications Tab */}
         <TabsContent value="notifications" className="space-y-6">
           <Card>
             <CardHeader>
@@ -316,151 +438,142 @@ const Settings = () => {
                 Notification Preferences
               </CardTitle>
               <CardDescription>
-                Configure how and when you receive notifications
+                Choose what notifications you want to receive
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <Label>System Notifications</Label>
-                    <p className="text-sm text-muted-foreground">Enable in-app notifications</p>
-                  </div>
-                  <Switch
-                    checked={systemSettings.enableNotifications}
-                    onCheckedChange={(checked) => setSystemSettings({ ...systemSettings, enableNotifications: checked })}
-                  />
-                </div>
-
-                <Separator />
-
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between p-4 border rounded-lg">
                   <div className="space-y-1">
                     <Label className="flex items-center gap-2">
                       <Mail className="h-4 w-4" />
-                      Email Alerts
+                      Email Notifications
                     </Label>
-                    <p className="text-sm text-muted-foreground">Receive alerts via email</p>
+                    <p className="text-sm text-muted-foreground">
+                      Receive updates via email
+                    </p>
                   </div>
                   <Switch
-                    checked={systemSettings.enableEmailAlerts}
-                    onCheckedChange={(checked) => setSystemSettings({ ...systemSettings, enableEmailAlerts: checked })}
+                    checked={notificationSettings.emailNotifications}
+                    onCheckedChange={(checked) => 
+                      setNotificationSettings({ ...notificationSettings, emailNotifications: checked })
+                    }
                   />
                 </div>
 
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between p-4 border rounded-lg">
                   <div className="space-y-1">
-                    <Label>SMS Alerts</Label>
-                    <p className="text-sm text-muted-foreground">Receive critical alerts via SMS</p>
+                    <Label>Order Alerts</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Get notified about new orders
+                    </p>
                   </div>
                   <Switch
-                    checked={systemSettings.enableSMSAlerts}
-                    onCheckedChange={(checked) => setSystemSettings({ ...systemSettings, enableSMSAlerts: checked })}
+                    checked={notificationSettings.orderAlerts}
+                    onCheckedChange={(checked) => 
+                      setNotificationSettings({ ...notificationSettings, orderAlerts: checked })
+                    }
                   />
                 </div>
 
-                <Separator />
-
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between p-4 border rounded-lg">
                   <div className="space-y-1">
-                    <Label className="flex items-center gap-2">
-                      <Shield className="h-4 w-4" />
-                      Two-Factor Authentication
-                    </Label>
-                    <p className="text-sm text-muted-foreground">Enable 2FA for enhanced security</p>
+                    <Label>Stock Alerts</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Alert when stock is low
+                    </p>
                   </div>
                   <Switch
-                    checked={systemSettings.enableTwoFactor}
-                    onCheckedChange={(checked) => setSystemSettings({ ...systemSettings, enableTwoFactor: checked })}
+                    checked={notificationSettings.stockAlerts}
+                    onCheckedChange={(checked) => 
+                      setNotificationSettings({ ...notificationSettings, stockAlerts: checked })
+                    }
+                  />
+                </div>
+
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="space-y-1">
+                    <Label>System Updates</Label>
+                    <p className="text-sm text-muted-foreground">
+                      News about features and updates
+                    </p>
+                  </div>
+                  <Switch
+                    checked={notificationSettings.systemUpdates}
+                    onCheckedChange={(checked) => 
+                      setNotificationSettings({ ...notificationSettings, systemUpdates: checked })
+                    }
                   />
                 </div>
               </div>
 
-              <Button onClick={handleSaveSystemSettings}>Save Notification Settings</Button>
+              <Button onClick={handleSaveNotifications}>
+                <Save className="h-4 w-4 mr-2" />
+                Save Preferences
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>
 
+        {/* Appearance Tab */}
         <TabsContent value="appearance" className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Palette className="h-5 w-5" />
-                Appearance & Theme
+                Theme Settings
               </CardTitle>
               <CardDescription>
-                Customize the look and feel of your application
+                Customize how the app looks for you
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="theme">Theme</Label>
-                  <Select value={themeSettings.theme} onValueChange={(value) => setThemeSettings({ ...themeSettings, theme: value })}>
-                    <SelectTrigger className="w-48">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="light">Light</SelectItem>
-                      <SelectItem value="dark">Dark</SelectItem>
-                      <SelectItem value="auto">Auto (System)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="primaryColor">Primary Color</Label>
-                  <Select value={themeSettings.primaryColor} onValueChange={(value) => setThemeSettings({ ...themeSettings, primaryColor: value })}>
-                    <SelectTrigger className="w-48">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="blue">Blue</SelectItem>
-                      <SelectItem value="green">Green</SelectItem>
-                      <SelectItem value="purple">Purple</SelectItem>
-                      <SelectItem value="red">Red</SelectItem>
-                      <SelectItem value="orange">Orange</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label>Theme Mode</Label>
+                  <div className="grid grid-cols-3 gap-4">
+                    <Button
+                      variant={theme === "light" ? "default" : "outline"}
+                      className="w-full"
+                      onClick={() => setTheme("light")}
+                    >
+                      Light
+                    </Button>
+                    <Button
+                      variant={theme === "dark" ? "default" : "outline"}
+                      className="w-full"
+                      onClick={() => setTheme("dark")}
+                    >
+                      Dark
+                    </Button>
+                    <Button
+                      variant={theme === "system" ? "default" : "outline"}
+                      className="w-full"
+                      onClick={() => setTheme("system")}
+                    >
+                      System
+                    </Button>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Choose your preferred theme or match your system settings
+                  </p>
                 </div>
 
                 <Separator />
 
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <Label>Collapse Sidebar by Default</Label>
-                    <p className="text-sm text-muted-foreground">Start with a collapsed sidebar</p>
+                <div className="p-4 border rounded-lg space-y-3">
+                  <Label>Theme Preview</Label>
+                  <div className="grid grid-cols-4 gap-2">
+                    <div className="h-20 rounded bg-background border"></div>
+                    <div className="h-20 rounded bg-card border"></div>
+                    <div className="h-20 rounded bg-primary"></div>
+                    <div className="h-20 rounded bg-secondary"></div>
                   </div>
-                  <Switch
-                    checked={themeSettings.sidebarCollapsed}
-                    onCheckedChange={(checked) => setThemeSettings({ ...themeSettings, sidebarCollapsed: checked })}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <Label>Enable Animations</Label>
-                    <p className="text-sm text-muted-foreground">Show smooth transitions and animations</p>
-                  </div>
-                  <Switch
-                    checked={themeSettings.showAnimations}
-                    onCheckedChange={(checked) => setThemeSettings({ ...themeSettings, showAnimations: checked })}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <Label>Compact Mode</Label>
-                    <p className="text-sm text-muted-foreground">Use smaller spacing and components</p>
-                  </div>
-                  <Switch
-                    checked={themeSettings.compactMode}
-                    onCheckedChange={(checked) => setThemeSettings({ ...themeSettings, compactMode: checked })}
-                  />
+                  <p className="text-xs text-muted-foreground">
+                    Preview of current theme colors
+                  </p>
                 </div>
               </div>
-
-              <Button onClick={handleSaveThemeSettings}>Save Appearance Settings</Button>
             </CardContent>
           </Card>
         </TabsContent>
