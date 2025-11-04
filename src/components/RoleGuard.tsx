@@ -37,24 +37,32 @@ const RoleGuard = ({ children, requiredRole = 'staff', fallback }: RoleGuardProp
       
       if (error) {
         console.error('Error fetching user role:', error);
-        setUserRole('staff');
-      } else if (data && data.length > 0) {
+        // Security: Deny access on error instead of defaulting to staff
+        setUserRole(null);
+        setLoading(false);
+        return;
+      }
+      
+      if (data && data.length > 0) {
         // If user has admin role, set that as primary
-        // Otherwise, set staff if they have it, or default to staff
+        // Otherwise, set staff if they have it
         const roles = data.map(r => r.role);
         if (roles.includes('admin')) {
           setUserRole('admin');
         } else if (roles.includes('staff')) {
           setUserRole('staff');
         } else {
-          setUserRole('staff');
+          // User exists but has no valid roles
+          setUserRole(null);
         }
       } else {
-        setUserRole('staff');
+        // User exists but has no roles assigned
+        setUserRole(null);
       }
     } catch (error) {
       console.error('Error fetching user role:', error);
-      setUserRole('staff');
+      // Security: Deny access on exception instead of defaulting to staff
+      setUserRole(null);
     } finally {
       setLoading(false);
     }
@@ -96,6 +104,21 @@ const RoleGuard = ({ children, requiredRole = 'staff', fallback }: RoleGuardProp
     
     return false;
   };
+
+  // If role is null (error or no role assigned), show error state
+  if (userRole === null) {
+    return fallback || (
+      <Card className="max-w-md mx-auto mt-8">
+        <CardContent className="p-6 text-center">
+          <Shield className="h-12 w-12 mx-auto mb-4 text-destructive" />
+          <h3 className="font-semibold mb-2">Permission Verification Failed</h3>
+          <p className="text-muted-foreground">
+            Unable to verify your permissions. Please refresh the page or contact support if the issue persists.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (!hasPermission()) {
     return fallback || (

@@ -103,11 +103,13 @@ const ProductManagement = () => {
 
       try {
         const products = [];
+        const errors: string[] = [];
+        
         for (let i = 1; i < lines.length; i++) {
           if (!lines[i].trim()) continue;
           
           const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
-          const product = {
+          const productData = {
             sku: values[0],
             name: values[1],
             price: parseFloat(values[2]) || 0,
@@ -117,9 +119,25 @@ const ProductManagement = () => {
             status: 'active'
           };
           
-          if (product.sku && product.name && product.price > 0) {
-            products.push(product);
+          // Validate each product using zod schema
+          const validationResult = productSchema.safeParse(productData);
+          
+          if (!validationResult.success) {
+            errors.push(`Row ${i}: ${formatZodError(validationResult.error)}`);
+            continue;
           }
+          
+          products.push(validationResult.data);
+        }
+        
+        // Show validation errors if any
+        if (errors.length > 0) {
+          toast({
+            title: "Validation Errors",
+            description: `${errors.length} row(s) failed validation. First error: ${errors[0]}`,
+            variant: "destructive",
+          });
+          if (products.length === 0) return;
         }
 
         // Insert into database
