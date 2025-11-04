@@ -52,6 +52,7 @@ const OrderManagement = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editTrackingNumber, setEditTrackingNumber] = useState("");
   const [editDeliveryRound, setEditDeliveryRound] = useState("");
+  const [editStatus, setEditStatus] = useState("");
   const [isImportPreviewOpen, setIsImportPreviewOpen] = useState(false);
   const [importPreviewData, setImportPreviewData] = useState<Array<{
     orderId: string;
@@ -194,6 +195,7 @@ const OrderManagement = () => {
     setSelectedOrder(order);
     setEditTrackingNumber(order.tracking_number || "");
     setEditDeliveryRound(order.delivery_round || "");
+    setEditStatus(order.status);
     setIsEditDialogOpen(true);
   };
 
@@ -205,7 +207,8 @@ const OrderManagement = () => {
         .from('orders')
         .update({
           tracking_number: editTrackingNumber,
-          delivery_round: editDeliveryRound
+          delivery_round: editDeliveryRound,
+          status: editStatus
         })
         .eq('id', selectedOrder.id);
 
@@ -776,6 +779,21 @@ const OrderManagement = () => {
             <DialogTitle>Edit Order - {selectedOrder?.order_code}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
+            <div>
+              <Label htmlFor="status">Status</Label>
+              <Select value={editStatus} onValueChange={setEditStatus}>
+                <SelectTrigger id="status">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="processing">Processing</SelectItem>
+                  <SelectItem value="shipped">Shipped</SelectItem>
+                  <SelectItem value="delivered">Delivered</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <div>
               <Label htmlFor="tracking">Tracking Number</Label>
               <Input
