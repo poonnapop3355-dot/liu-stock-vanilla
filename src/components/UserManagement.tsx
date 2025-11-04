@@ -9,18 +9,17 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { UserPlus, Edit, Trash2, Search, Mail, Phone, Calendar } from "lucide-react";
+import { UserPlus, Edit, Trash2, Search, Mail } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface User {
   id: string;
   email: string;
   full_name?: string;
-  phone?: string;
-  role: 'admin' | 'manager' | 'employee';
-  status: 'active' | 'inactive';
-  last_sign_in?: string;
+  avatar_url?: string;
+  role: 'admin' | 'staff';
   created_at: string;
+  updated_at?: string;
 }
 
 const UserManagement = () => {
@@ -29,52 +28,67 @@ const UserManagement = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [newUser, setNewUser] = useState({
+  const [newUser, setNewUser] = useState<{
+    email: string;
+    full_name: string;
+    password: string;
+    role: 'admin' | 'staff';
+  }>({
     email: "",
     full_name: "",
-    phone: "",
-    role: "employee" as const,
-    status: "active" as const
+    password: "",
+    role: "staff"
   });
   const { toast } = useToast();
 
-  // Mock users data since Supabase auth users table is not directly accessible
   useEffect(() => {
-    // In a real app, you'd fetch from a profiles table that mirrors auth users
-    const mockUsers: User[] = [
-      {
-        id: "1",
-        email: "admin@example.com",
-        full_name: "Admin User",
-        phone: "+1234567890",
-        role: "admin",
-        status: "active",
-        last_sign_in: "2024-01-15T10:30:00Z",
-        created_at: "2024-01-01T00:00:00Z"
-      },
-      {
-        id: "2",
-        email: "manager@example.com",
-        full_name: "Manager User",
-        phone: "+1234567891",
-        role: "manager",
-        status: "active",
-        last_sign_in: "2024-01-14T15:45:00Z",
-        created_at: "2024-01-02T00:00:00Z"
-      },
-      {
-        id: "3",
-        email: "employee@example.com",
-        full_name: "Employee User",
-        phone: "+1234567892",
-        role: "employee",
-        status: "inactive",
-        last_sign_in: "2024-01-10T09:15:00Z",
-        created_at: "2024-01-03T00:00:00Z"
-      }
-    ];
-    setUsers(mockUsers);
+    fetchUsers();
   }, []);
+
+  const fetchUsers = async () => {
+    try {
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (profilesError) throw profilesError;
+
+      if (!profiles) {
+        setUsers([]);
+        return;
+      }
+
+      // Fetch roles for each user
+      const usersWithRoles = await Promise.all(
+        profiles.map(async (profile) => {
+          const { data: roleData } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', profile.id)
+            .single();
+
+          return {
+            id: profile.id,
+            email: profile.email || '',
+            full_name: profile.full_name || '',
+            avatar_url: profile.avatar_url || '',
+            role: (roleData?.role || 'staff') as 'admin' | 'staff',
+            created_at: profile.created_at || new Date().toISOString(),
+            updated_at: profile.updated_at || ''
+          };
+        })
+      );
+
+      setUsers(usersWithRoles);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to fetch users",
+        variant: "destructive"
+      });
+    }
+  };
 
   const filteredUsers = users.filter(user =>
     user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -82,77 +96,146 @@ const UserManagement = () => {
     user.role.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleAddUser = () => {
-    const user: User = {
-      id: Date.now().toString(),
-      email: newUser.email,
-      full_name: newUser.full_name,
-      phone: newUser.phone,
-      role: newUser.role,
-      status: newUser.status,
-      created_at: new Date().toISOString()
-    };
+  const handleAddUser = async () => {
+    try {
+      // Create auth user
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: newUser.email,
+        password: newUser.password,
+        options: {
+          data: {
+            full_name: newUser.full_name
+          }
+        }
+      });
 
-    setUsers([...users, user]);
-    setNewUser({
-      email: "",
-      full_name: "",
-      phone: "",
-      role: "employee",
-      status: "active"
-    });
-    setIsAddDialogOpen(false);
-    toast({
-      title: "User added successfully",
-      description: `${user.full_name} has been added to the system.`,
-    });
+      if (authError) throw authError;
+
+      if (!authData.user) {
+        throw new Error("Failed to create user");
+      }
+
+      // The profile and default role will be created automatically by the trigger
+      // If we need to set a specific role (like admin), we need to update it
+      if (newUser.role === 'admin') {
+        const { error: roleError } = await supabase
+          .from('user_roles')
+          .update({ role: 'admin' })
+          .eq('user_id', authData.user.id);
+
+        if (roleError) throw roleError;
+      }
+
+      setNewUser({
+        email: "",
+        full_name: "",
+        password: "",
+        role: "staff"
+      });
+      setIsAddDialogOpen(false);
+      
+      toast({
+        title: "User added successfully",
+        description: `${newUser.full_name} has been added to the system.`,
+      });
+
+      // Refresh users list
+      fetchUsers();
+    } catch (error: any) {
+      toast({
+        title: "Error adding user",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
   };
 
-  const handleEditUser = () => {
+  const handleEditUser = async () => {
     if (!selectedUser) return;
 
-    const updatedUsers = users.map(user =>
-      user.id === selectedUser.id ? selectedUser : user
-    );
-    setUsers(updatedUsers);
-    setIsEditDialogOpen(false);
-    setSelectedUser(null);
-    toast({
-      title: "User updated successfully",
-      description: `${selectedUser.full_name} has been updated.`,
-    });
+    try {
+      // Update profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          full_name: selectedUser.full_name,
+          email: selectedUser.email
+        })
+        .eq('id', selectedUser.id);
+
+      if (profileError) throw profileError;
+
+      // Update role
+      const { error: roleError } = await supabase
+        .from('user_roles')
+        .update({ role: selectedUser.role })
+        .eq('user_id', selectedUser.id);
+
+      if (roleError) throw roleError;
+
+      setIsEditDialogOpen(false);
+      setSelectedUser(null);
+      
+      toast({
+        title: "User updated successfully",
+        description: `${selectedUser.full_name} has been updated.`,
+      });
+
+      // Refresh users list
+      fetchUsers();
+    } catch (error: any) {
+      toast({
+        title: "Error updating user",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
   };
 
-  const handleDeleteUser = (userId: string) => {
+  const handleDeleteUser = async (userId: string) => {
     const user = users.find(u => u.id === userId);
     if (!user) return;
 
-    setUsers(users.filter(u => u.id !== userId));
-    toast({
-      title: "User deleted",
-      description: `${user.full_name} has been removed from the system.`,
-      variant: "destructive"
-    });
+    if (!confirm(`Are you sure you want to delete ${user.full_name}? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      // Note: Deleting from profiles will cascade to user_roles due to foreign key
+      // However, we cannot delete from auth.users directly through the client
+      // In production, you'd want an admin endpoint/function to handle this
+      const { error } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', userId);
+
+      if (error) throw error;
+
+      toast({
+        title: "User deleted",
+        description: `${user.full_name} has been removed from the system.`,
+      });
+
+      // Refresh users list
+      fetchUsers();
+    } catch (error: any) {
+      toast({
+        title: "Error deleting user",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
   };
 
   const getRoleBadge = (role: string) => {
     const variants = {
       admin: "destructive",
-      manager: "default",
-      employee: "secondary"
+      staff: "default"
     } as const;
     
     return (
       <Badge variant={variants[role as keyof typeof variants] || "secondary"}>
         {role.charAt(0).toUpperCase() + role.slice(1)}
-      </Badge>
-    );
-  };
-
-  const getStatusBadge = (status: string) => {
-    return (
-      <Badge variant={status === "active" ? "default" : "outline"}>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
       </Badge>
     );
   };
@@ -199,12 +282,13 @@ const UserManagement = () => {
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="phone">Phone</Label>
+                <Label htmlFor="password">Password</Label>
                 <Input
-                  id="phone"
-                  placeholder="+1234567890"
-                  value={newUser.phone}
-                  onChange={(e) => setNewUser({ ...newUser, phone: e.target.value })}
+                  id="password"
+                  type="password"
+                  placeholder="Enter password"
+                  value={newUser.password}
+                  onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
                 />
               </div>
               <div className="grid gap-2">
@@ -214,8 +298,7 @@ const UserManagement = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="employee">Employee</SelectItem>
-                    <SelectItem value="manager">Manager</SelectItem>
+                    <SelectItem value="staff">Staff</SelectItem>
                     <SelectItem value="admin">Admin</SelectItem>
                   </SelectContent>
                 </Select>
@@ -235,7 +318,7 @@ const UserManagement = () => {
         <CardHeader>
           <CardTitle>Users</CardTitle>
           <CardDescription>
-            Total users: {users.length} | Active: {users.filter(u => u.status === "active").length}
+            Total users: {users.length} | Admin: {users.filter(u => u.role === "admin").length} | Staff: {users.filter(u => u.role === "staff").length}
           </CardDescription>
           <div className="flex items-center space-x-2">
             <Search className="h-4 w-4 text-muted-foreground" />
@@ -252,10 +335,9 @@ const UserManagement = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>User</TableHead>
-                <TableHead>Contact</TableHead>
+                <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Last Sign In</TableHead>
+                <TableHead>Created</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -263,31 +345,19 @@ const UserManagement = () => {
               {filteredUsers.map((user) => (
                 <TableRow key={user.id}>
                   <TableCell>
-                    <div>
-                      <div className="font-medium">{user.full_name || "N/A"}</div>
-                      <div className="text-sm text-muted-foreground flex items-center gap-1">
-                        <Mail className="h-3 w-3" />
-                        {user.email}
-                      </div>
+                    <div className="font-medium">{user.full_name || "N/A"}</div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="text-sm text-muted-foreground flex items-center gap-1">
+                      <Mail className="h-3 w-3" />
+                      {user.email}
                     </div>
                   </TableCell>
-                  <TableCell>
-                    {user.phone && (
-                      <div className="text-sm flex items-center gap-1">
-                        <Phone className="h-3 w-3" />
-                        {user.phone}
-                      </div>
-                    )}
-                  </TableCell>
                   <TableCell>{getRoleBadge(user.role)}</TableCell>
-                  <TableCell>{getStatusBadge(user.status)}</TableCell>
                   <TableCell>
-                    {user.last_sign_in && (
-                      <div className="text-sm flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
-                        {new Date(user.last_sign_in).toLocaleDateString()}
-                      </div>
-                    )}
+                    <div className="text-sm text-muted-foreground">
+                      {new Date(user.created_at).toLocaleDateString()}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex space-x-2">
@@ -346,35 +416,16 @@ const UserManagement = () => {
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="edit_phone">Phone</Label>
-                <Input
-                  id="edit_phone"
-                  value={selectedUser.phone || ""}
-                  onChange={(e) => setSelectedUser({ ...selectedUser, phone: e.target.value })}
-                />
-              </div>
-              <div className="grid gap-2">
                 <Label htmlFor="edit_role">Role</Label>
                 <Select value={selectedUser.role} onValueChange={(value: any) => setSelectedUser({ ...selectedUser, role: value })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="employee">Employee</SelectItem>
-                    <SelectItem value="manager">Manager</SelectItem>
+                    <SelectItem value="staff">Staff</SelectItem>
                     <SelectItem value="admin">Admin</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="edit_status"
-                  checked={selectedUser.status === "active"}
-                  onCheckedChange={(checked) => 
-                    setSelectedUser({ ...selectedUser, status: checked ? "active" : "inactive" })
-                  }
-                />
-                <Label htmlFor="edit_status">Active</Label>
               </div>
             </div>
           )}
