@@ -135,11 +135,19 @@ const BookManagement = () => {
       }
 
       const { data, error } = await supabase.from('books').insert([{
-        ...validationResult.data,
+        title: validationResult.data.title,
+        author: validationResult.data.author,
+        isbn: validationResult.data.isbn || null,
+        description: validationResult.data.description || null,
         price: parseFloat(validationResult.data.price),
+        category: validationResult.data.category || null,
+        publisher: validationResult.data.publisher || null,
         stock_quantity: parseInt(validationResult.data.stock_quantity),
         pages: validationResult.data.pages ? parseInt(validationResult.data.pages) : null,
-        publication_date: newBook.publication_date || null
+        language: validationResult.data.language,
+        cover_image_url: validationResult.data.cover_image_url || null,
+        publication_date: newBook.publication_date || null,
+        status: newBook.status
       }]).select();
 
       if (error) throw error;
@@ -173,7 +181,10 @@ const BookManagement = () => {
       }
 
       const { data, error } = await supabase.from('authors').insert([{
-        ...validationResult.data,
+        name: validationResult.data.name,
+        biography: validationResult.data.biography || null,
+        nationality: validationResult.data.nationality || null,
+        website: validationResult.data.website || null,
         birth_date: newAuthor.birth_date.toISOString().split('T')[0]
       }]).select();
 
@@ -202,7 +213,10 @@ const BookManagement = () => {
         return;
       }
 
-      const { data, error } = await supabase.from('book_categories').insert([validationResult.data]).select();
+      const { data, error } = await supabase.from('book_categories').insert([{
+        name: validationResult.data.name,
+        description: validationResult.data.description || null
+      }]).select();
 
       if (error) throw error;
 

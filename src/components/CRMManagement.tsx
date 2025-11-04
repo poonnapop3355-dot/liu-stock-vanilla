@@ -294,9 +294,15 @@ const CRMManagement = () => {
             continue;
           }
           
-          if (customer.customer_contact) {
-            customersToImport.push(customer);
-          }
+          customersToImport.push(validationResult.data);
+        }
+
+        if (validationErrors.length > 0) {
+          toast({
+            title: "Import Warnings",
+            description: `${validationErrors.length} rows had validation errors and were skipped`,
+            variant: "destructive"
+          });
         }
 
         const { error } = await supabase
