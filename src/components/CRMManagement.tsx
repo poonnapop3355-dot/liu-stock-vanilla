@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Search, Download, Upload, Edit, Plus, Eye } from "lucide-react";
@@ -21,6 +22,21 @@ interface Customer {
   updated_at: string;
 }
 
+interface Order {
+  id: string;
+  order_code: string;
+  order_date: string;
+  total_amount: number;
+  status: string;
+}
+
+interface OrderItem {
+  product_name: string;
+  quantity: number;
+  price: number;
+  total_price: number;
+}
+
 const CRMManagement = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -28,6 +44,8 @@ const CRMManagement = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [customerOrders, setCustomerOrders] = useState<Order[]>([]);
+  const [customerOrderItems, setCustomerOrderItems] = useState<{[orderId: string]: OrderItem[]}>({});
   const [formData, setFormData] = useState({
     customer_contact: "",
     name: "",
@@ -145,9 +163,41 @@ const CRMManagement = () => {
     setIsEditDialogOpen(true);
   };
 
-  const openViewDialog = (customer: Customer) => {
+  const openViewDialog = async (customer: Customer) => {
     setSelectedCustomer(customer);
+    await fetchCustomerOrders(customer.customer_contact);
     setIsViewDialogOpen(true);
+  };
+
+  const fetchCustomerOrders = async (customerContact: string) => {
+    try {
+      const { data: orders, error } = await supabase
+        .from('orders')
+        .select('id, order_code, order_date, total_amount, status')
+        .eq('customer_contact', customerContact)
+        .order('order_date', { ascending: false });
+      
+      if (error) throw error;
+      setCustomerOrders(orders || []);
+
+      // Fetch items for each order
+      if (orders && orders.length > 0) {
+        const itemsMap: {[orderId: string]: OrderItem[]} = {};
+        for (const order of orders) {
+          const { data: items, error: itemsError } = await supabase
+            .from('order_items')
+            .select('product_name, quantity, price, total_price')
+            .eq('order_id', order.id);
+          
+          if (!itemsError && items) {
+            itemsMap[order.id] = items;
+          }
+        }
+        setCustomerOrderItems(itemsMap);
+      }
+    } catch (error) {
+      console.error('Error fetching customer orders:', error);
+    }
   };
 
   const exportToCSV = () => {
@@ -458,6 +508,45 @@ const CRMManagement = () => {
               <div>
                 <Label>Created Date</Label>
                 <p className="mt-1">{new Date(selectedCustomer.created_at).toLocaleDateString()}</p>
+              </div>
+
+              {/* Purchase History Section */}
+              <div className="mt-6 border-t pt-4">
+                <h3 className="text-lg font-semibold mb-3">Purchase History</h3>
+                {customerOrders.length > 0 ? (
+                  <div className="space-y-4">
+                    <div className="text-sm text-muted-foreground">
+                      Total Orders: <span className="font-medium">{customerOrders.length}</span> | 
+                      Total Spent: <span className="font-medium">฿{customerOrders.reduce((sum, order) => sum + Number(order.total_amount), 0).toFixed(2)}</span>
+                    </div>
+                    {customerOrders.map((order) => (
+                      <Card key={order.id} className="p-4">
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <p className="font-medium">{order.order_code}</p>
+                            <p className="text-sm text-muted-foreground">{order.order_date}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-semibold">฿{Number(order.total_amount).toFixed(2)}</p>
+                            <Badge variant="outline">{order.status}</Badge>
+                          </div>
+                        </div>
+                        {customerOrderItems[order.id] && customerOrderItems[order.id].length > 0 && (
+                          <div className="mt-3 space-y-1">
+                            <p className="text-sm font-medium">Items:</p>
+                            {customerOrderItems[order.id].map((item, idx) => (
+                              <p key={idx} className="text-sm text-muted-foreground">
+                                • {item.product_name} (x{item.quantity}) - ฿{Number(item.total_price).toFixed(2)}
+                              </p>
+                            ))}
+                          </div>
+                        )}
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No purchase history found for this customer.</p>
+                )}
               </div>
             </div>
           )}
