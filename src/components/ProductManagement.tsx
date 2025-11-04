@@ -5,9 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { Plus, Edit, Trash2, Download, Upload, Search } from "lucide-react";
 import { productSchema, sanitizeCSVValue, formatZodError } from "@/lib/validationSchemas";
 
@@ -16,6 +18,17 @@ const ProductManagement = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<any>(null);
+  const [formData, setFormData] = useState({
+    sku: "",
+    name: "",
+    description: "",
+    price: "",
+    category: "",
+    stock_quantity: "",
+    status: "active"
+  });
   const { toast } = useToast();
 
   useEffect(() => {
@@ -165,9 +178,127 @@ const ProductManagement = () => {
     }
   };
 
-  const handleEditProduct = (sku: string) => {
-    console.log('Edit product:', sku);
-    // TODO: Open edit dialog with product data
+  const handleEditProduct = (product: any) => {
+    console.log('Edit product:', product.sku);
+    setEditingProduct(product);
+    setFormData({
+      sku: product.sku,
+      name: product.name,
+      description: product.description || "",
+      price: product.price.toString(),
+      category: product.category || "",
+      stock_quantity: product.stock_quantity.toString(),
+      status: product.status
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingProduct) return;
+
+    try {
+      // Validate input
+      const validationResult = productSchema.safeParse(formData);
+      if (!validationResult.success) {
+        toast({
+          title: "Validation Error",
+          description: formatZodError(validationResult.error),
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const { error } = await supabase
+        .from('products')
+        .update({
+          sku: validationResult.data.sku,
+          name: validationResult.data.name,
+          description: validationResult.data.description || null,
+          price: parseFloat(validationResult.data.price),
+          category: validationResult.data.category || null,
+          stock_quantity: parseInt(validationResult.data.stock_quantity),
+          status: validationResult.data.status
+        })
+        .eq('id', editingProduct.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Product Updated",
+        description: "Product updated successfully"
+      });
+
+      setIsEditDialogOpen(false);
+      setEditingProduct(null);
+      setFormData({
+        sku: "",
+        name: "",
+        description: "",
+        price: "",
+        category: "",
+        stock_quantity: "",
+        status: "active"
+      });
+      fetchProducts();
+    } catch (error) {
+      toast({
+        title: "Update Failed",
+        description: "Failed to update product",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleAddProduct = async () => {
+    try {
+      // Validate input
+      const validationResult = productSchema.safeParse(formData);
+      if (!validationResult.success) {
+        toast({
+          title: "Validation Error",
+          description: formatZodError(validationResult.error),
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const { error } = await supabase
+        .from('products')
+        .insert([{
+          sku: validationResult.data.sku,
+          name: validationResult.data.name,
+          description: validationResult.data.description || null,
+          price: parseFloat(validationResult.data.price),
+          category: validationResult.data.category || null,
+          stock_quantity: parseInt(validationResult.data.stock_quantity),
+          status: validationResult.data.status
+        }]);
+
+      if (error) throw error;
+
+      toast({
+        title: "Product Added",
+        description: "Product added successfully"
+      });
+
+      setIsAddDialogOpen(false);
+      setFormData({
+        sku: "",
+        name: "",
+        description: "",
+        price: "",
+        category: "",
+        stock_quantity: "",
+        status: "active"
+      });
+      fetchProducts();
+    } catch (error) {
+      toast({
+        title: "Add Failed",
+        description: "Failed to add product",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleDeleteProduct = async (id: string) => {
@@ -236,42 +367,91 @@ const ProductManagement = () => {
                   <DialogHeader>
                     <DialogTitle>Add New Product</DialogTitle>
                   </DialogHeader>
-                  <div className="space-y-4">
+                  <div className="space-y-4 max-h-[60vh] overflow-y-auto">
                     <div>
-                      <Label htmlFor="sku">SKU</Label>
-                      <Input id="sku" placeholder="e.g., TEE005" />
+                      <Label htmlFor="add-sku">SKU *</Label>
+                      <Input 
+                        id="add-sku" 
+                        value={formData.sku}
+                        onChange={(e) => setFormData({...formData, sku: e.target.value})}
+                        placeholder="e.g., PROD001" 
+                      />
                     </div>
                     <div>
-                      <Label htmlFor="name">Product Name</Label>
-                      <Input id="name" placeholder="Enter product name" />
+                      <Label htmlFor="add-name">Product Name *</Label>
+                      <Input 
+                        id="add-name" 
+                        value={formData.name}
+                        onChange={(e) => setFormData({...formData, name: e.target.value})}
+                        placeholder="Enter product name" 
+                      />
                     </div>
                     <div>
-                      <Label htmlFor="price">Selling Price</Label>
-                      <Input id="price" type="number" placeholder="0.00" />
+                      <Label htmlFor="add-description">Description</Label>
+                      <Textarea 
+                        id="add-description" 
+                        value={formData.description}
+                        onChange={(e) => setFormData({...formData, description: e.target.value})}
+                        placeholder="Product description" 
+                      />
                     </div>
                     <div>
-                      <Label htmlFor="quantity">Initial Quantity</Label>
-                      <Input id="quantity" type="number" placeholder="0" />
+                      <Label htmlFor="add-price">Price *</Label>
+                      <Input 
+                        id="add-price" 
+                        type="number" 
+                        step="0.01"
+                        value={formData.price}
+                        onChange={(e) => setFormData({...formData, price: e.target.value})}
+                        placeholder="0.00" 
+                      />
                     </div>
                     <div>
-                      <Label htmlFor="threshold">Low Stock Threshold</Label>
-                      <Input id="threshold" type="number" placeholder="10" />
+                      <Label htmlFor="add-category">Category</Label>
+                      <Input 
+                        id="add-category" 
+                        value={formData.category}
+                        onChange={(e) => setFormData({...formData, category: e.target.value})}
+                        placeholder="e.g., Electronics" 
+                      />
                     </div>
-                    <div className="flex gap-2 pt-4">
-                      <Button 
-                        className="bg-gradient-primary text-primary-foreground flex-1"
-                        onClick={() => setIsAddDialogOpen(false)}
-                      >
-                        Add Product
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        onClick={() => setIsAddDialogOpen(false)}
-                      >
-                        Cancel
-                      </Button>
+                    <div>
+                      <Label htmlFor="add-quantity">Stock Quantity *</Label>
+                      <Input 
+                        id="add-quantity" 
+                        type="number" 
+                        value={formData.stock_quantity}
+                        onChange={(e) => setFormData({...formData, stock_quantity: e.target.value})}
+                        placeholder="0" 
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="add-status">Status</Label>
+                      <Select value={formData.status} onValueChange={(value) => setFormData({...formData, status: value})}>
+                        <SelectTrigger id="add-status">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="active">Active</SelectItem>
+                          <SelectItem value="inactive">Inactive</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
+                  <DialogFooter className="gap-2">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setIsAddDialogOpen(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button 
+                      className="bg-gradient-primary text-primary-foreground"
+                      onClick={handleAddProduct}
+                    >
+                      Add Product
+                    </Button>
+                  </DialogFooter>
                 </DialogContent>
               </Dialog>
             </div>
@@ -314,7 +494,7 @@ const ProductManagement = () => {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button size="sm" variant="outline" className="gap-1" onClick={() => handleEditProduct(product.sku)}>
+                        <Button size="sm" variant="outline" className="gap-1" onClick={() => handleEditProduct(product)}>
                           <Edit className="h-3 w-3" />
                           Edit
                         </Button>
@@ -331,6 +511,100 @@ const ProductManagement = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Edit Product Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Product</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 max-h-[60vh] overflow-y-auto">
+            <div>
+              <Label htmlFor="edit-sku">SKU *</Label>
+              <Input 
+                id="edit-sku" 
+                value={formData.sku}
+                onChange={(e) => setFormData({...formData, sku: e.target.value})}
+                placeholder="e.g., PROD001" 
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-name">Product Name *</Label>
+              <Input 
+                id="edit-name" 
+                value={formData.name}
+                onChange={(e) => setFormData({...formData, name: e.target.value})}
+                placeholder="Enter product name" 
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-description">Description</Label>
+              <Textarea 
+                id="edit-description" 
+                value={formData.description}
+                onChange={(e) => setFormData({...formData, description: e.target.value})}
+                placeholder="Product description" 
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-price">Price *</Label>
+              <Input 
+                id="edit-price" 
+                type="number" 
+                step="0.01"
+                value={formData.price}
+                onChange={(e) => setFormData({...formData, price: e.target.value})}
+                placeholder="0.00" 
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-category">Category</Label>
+              <Input 
+                id="edit-category" 
+                value={formData.category}
+                onChange={(e) => setFormData({...formData, category: e.target.value})}
+                placeholder="e.g., Electronics" 
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-quantity">Stock Quantity *</Label>
+              <Input 
+                id="edit-quantity" 
+                type="number" 
+                value={formData.stock_quantity}
+                onChange={(e) => setFormData({...formData, stock_quantity: e.target.value})}
+                placeholder="0" 
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-status">Status</Label>
+              <Select value={formData.status} onValueChange={(value) => setFormData({...formData, status: value})}>
+                <SelectTrigger id="edit-status">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setIsEditDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              className="bg-gradient-primary text-primary-foreground"
+              onClick={handleSaveEdit}
+            >
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
