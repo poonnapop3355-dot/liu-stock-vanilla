@@ -51,6 +51,10 @@ const OrderManagement = () => {
     phone: string;
     tracking: string;
   }>>([]);
+  const [unmatchedEntries, setUnmatchedEntries] = useState<Array<{
+    phone: string;
+    tracking: string;
+  }>>([]);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -250,6 +254,11 @@ const OrderManagement = () => {
             phone: string;
             tracking: string;
           }> = [];
+          
+          const unmatched: Array<{
+            phone: string;
+            tracking: string;
+          }> = [];
 
           for (const update of updates) {
             const { data: matchingOrders, error } = await supabase
@@ -268,20 +277,28 @@ const OrderManagement = () => {
                 phone: update.phone,
                 tracking: update.tracking
               });
+            } else {
+              unmatched.push({
+                phone: update.phone,
+                tracking: update.tracking
+              });
             }
           }
 
-          if (previewMatches.length === 0) {
+          if (previewMatches.length === 0 && unmatched.length > 0) {
             toast({
               title: "No matches found",
-              description: "No orders found matching the phone numbers in the PDF.",
+              description: `${unmatched.length} phone numbers in the PDF don't match any orders without tracking numbers.`,
               variant: "destructive"
             });
+            setUnmatchedEntries(unmatched);
+            setIsImportPreviewOpen(true);
             return;
           }
 
           // Show preview dialog
           setImportPreviewData(previewMatches);
+          setUnmatchedEntries(unmatched);
           setIsImportPreviewOpen(true);
 
         } catch (error) {
@@ -323,6 +340,7 @@ const OrderManagement = () => {
       await fetchOrders();
       setIsImportPreviewOpen(false);
       setImportPreviewData([]);
+      setUnmatchedEntries([]);
 
       toast({
         title: "Import Complete",
@@ -557,45 +575,88 @@ const OrderManagement = () => {
       <Dialog open={isImportPreviewOpen} onOpenChange={setIsImportPreviewOpen}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
           <DialogHeader>
-            <DialogTitle>Review Import - {importPreviewData.length} Orders Found</DialogTitle>
+            <DialogTitle>
+              Review Import - {importPreviewData.length} Matched
+              {unmatchedEntries.length > 0 && `, ${unmatchedEntries.length} Unmatched`}
+            </DialogTitle>
           </DialogHeader>
-          <div className="flex-1 overflow-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Order Code</TableHead>
-                  <TableHead>Phone Number</TableHead>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>Tracking Number</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {importPreviewData.map((match) => (
-                  <TableRow key={match.orderId}>
-                    <TableCell className="font-medium">{match.orderCode}</TableCell>
-                    <TableCell>{match.phone}</TableCell>
-                    <TableCell>
-                      <div className="max-w-xs truncate" title={match.customerContact}>
-                        {match.customerContact.split('\n')[0]}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">{match.tracking}</Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+          <div className="flex-1 overflow-auto space-y-4">
+            {importPreviewData.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold mb-2 text-green-600">Matched Orders (Will be updated)</h3>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Order Code</TableHead>
+                      <TableHead>Phone Number</TableHead>
+                      <TableHead>Customer</TableHead>
+                      <TableHead>Tracking Number</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {importPreviewData.map((match) => (
+                      <TableRow key={match.orderId}>
+                        <TableCell className="font-medium">{match.orderCode}</TableCell>
+                        <TableCell>{match.phone}</TableCell>
+                        <TableCell>
+                          <div className="max-w-xs truncate" title={match.customerContact}>
+                            {match.customerContact.split('\n')[0]}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="secondary">{match.tracking}</Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+
+            {unmatchedEntries.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold mb-2 text-orange-600">Unmatched Entries (No order found)</h3>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Phone Number</TableHead>
+                      <TableHead>Tracking Number</TableHead>
+                      <TableHead>Reason</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {unmatchedEntries.map((entry, index) => (
+                      <TableRow key={index}>
+                        <TableCell>{entry.phone}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{entry.tracking}</Badge>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-sm">
+                          No order found or already has tracking
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
           </div>
           <div className="flex gap-2 pt-4 border-t">
-            <Button onClick={confirmImport} className="flex-1">
-              Confirm & Update {importPreviewData.length} Orders
-            </Button>
+            {importPreviewData.length > 0 ? (
+              <Button onClick={confirmImport} className="flex-1">
+                Confirm & Update {importPreviewData.length} Orders
+              </Button>
+            ) : (
+              <Button variant="outline" className="flex-1" disabled>
+                No Orders to Update
+              </Button>
+            )}
             <Button 
               variant="outline" 
               onClick={() => {
                 setIsImportPreviewOpen(false);
                 setImportPreviewData([]);
+                setUnmatchedEntries([]);
               }}
             >
               Cancel
