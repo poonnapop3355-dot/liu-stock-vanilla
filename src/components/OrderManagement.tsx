@@ -43,6 +43,14 @@ const OrderManagement = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editTrackingNumber, setEditTrackingNumber] = useState("");
   const [editDeliveryRound, setEditDeliveryRound] = useState("");
+  const [isImportPreviewOpen, setIsImportPreviewOpen] = useState(false);
+  const [importPreviewData, setImportPreviewData] = useState<Array<{
+    orderId: string;
+    orderCode: string;
+    customerContact: string;
+    phone: string;
+    tracking: string;
+  }>>([]);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -195,26 +203,18 @@ const OrderManagement = () => {
     }
 
     try {
-      // For now, show instructions to user about expected format
       toast({
         title: "PDF Import",
         description: "Processing shipping manifest PDF...",
       });
 
-      // Parse PDF using document parsing API
-      const formData = new FormData();
-      formData.append('file', file);
-
-      // Read file as text and try to extract tracking info
       const reader = new FileReader();
       reader.onload = async (e) => {
         try {
           const text = e.target?.result as string;
           
           // Extract tracking numbers and phone numbers using regex
-          // Pattern for Thai phone numbers: 0XXXXXXXXX (10 digits)
           const phonePattern = /0\d{9}/g;
-          // Pattern for tracking numbers (alphanumeric)
           const trackingPattern = /([A-Z0-9]{10,20})/g;
           
           // Parse line by line to match phone with tracking
@@ -226,10 +226,9 @@ const OrderManagement = () => {
             const trackings = line.match(trackingPattern);
             
             if (phones && trackings) {
-              // Match first phone with first tracking on same line
               updates.push({
                 phone: phones[0],
-                tracking: trackings[trackings.length - 1] // Usually tracking is last
+                tracking: trackings[trackings.length - 1]
               });
             }
           }
@@ -243,41 +242,48 @@ const OrderManagement = () => {
             return;
           }
 
-          // Match and update orders
-          let successCount = 0;
-          let notFoundCount = 0;
+          // Match orders and prepare preview
+          const previewMatches: Array<{
+            orderId: string;
+            orderCode: string;
+            customerContact: string;
+            phone: string;
+            tracking: string;
+          }> = [];
 
           for (const update of updates) {
-            // Find order by phone number in customer_contact
             const { data: matchingOrders, error } = await supabase
               .from('orders')
-              .select('id, order_code, tracking_number')
+              .select('id, order_code, customer_contact, tracking_number')
               .ilike('customer_contact', `%${update.phone}%`)
               .is('tracking_number', null);
 
             if (error) throw error;
 
             if (matchingOrders && matchingOrders.length > 0) {
-              // Update first matching order
-              const { error: updateError } = await supabase
-                .from('orders')
-                .update({ tracking_number: update.tracking })
-                .eq('id', matchingOrders[0].id);
-
-              if (!updateError) {
-                successCount++;
-              }
-            } else {
-              notFoundCount++;
+              previewMatches.push({
+                orderId: matchingOrders[0].id,
+                orderCode: matchingOrders[0].order_code,
+                customerContact: matchingOrders[0].customer_contact,
+                phone: update.phone,
+                tracking: update.tracking
+              });
             }
           }
 
-          await fetchOrders();
+          if (previewMatches.length === 0) {
+            toast({
+              title: "No matches found",
+              description: "No orders found matching the phone numbers in the PDF.",
+              variant: "destructive"
+            });
+            return;
+          }
 
-          toast({
-            title: "Import Complete",
-            description: `Updated ${successCount} orders. ${notFoundCount} phone numbers not found in pending orders.`,
-          });
+          // Show preview dialog
+          setImportPreviewData(previewMatches);
+          setIsImportPreviewOpen(true);
+
         } catch (error) {
           console.error('Parse error:', error);
           toast({
@@ -294,6 +300,39 @@ const OrderManagement = () => {
       toast({
         title: "Error",
         description: "Failed to import tracking numbers",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const confirmImport = async () => {
+    try {
+      let successCount = 0;
+
+      for (const match of importPreviewData) {
+        const { error } = await supabase
+          .from('orders')
+          .update({ tracking_number: match.tracking })
+          .eq('id', match.orderId);
+
+        if (!error) {
+          successCount++;
+        }
+      }
+
+      await fetchOrders();
+      setIsImportPreviewOpen(false);
+      setImportPreviewData([]);
+
+      toast({
+        title: "Import Complete",
+        description: `Successfully updated ${successCount} orders with tracking numbers.`,
+      });
+    } catch (error) {
+      console.error('Import error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update orders",
         variant: "destructive"
       });
     }
@@ -509,6 +548,57 @@ const OrderManagement = () => {
             </div>
             <Button onClick={updateOrder} className="w-full">
               Update Order
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Import Preview Dialog */}
+      <Dialog open={isImportPreviewOpen} onOpenChange={setIsImportPreviewOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Review Import - {importPreviewData.length} Orders Found</DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Order Code</TableHead>
+                  <TableHead>Phone Number</TableHead>
+                  <TableHead>Customer</TableHead>
+                  <TableHead>Tracking Number</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {importPreviewData.map((match) => (
+                  <TableRow key={match.orderId}>
+                    <TableCell className="font-medium">{match.orderCode}</TableCell>
+                    <TableCell>{match.phone}</TableCell>
+                    <TableCell>
+                      <div className="max-w-xs truncate" title={match.customerContact}>
+                        {match.customerContact.split('\n')[0]}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="secondary">{match.tracking}</Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          <div className="flex gap-2 pt-4 border-t">
+            <Button onClick={confirmImport} className="flex-1">
+              Confirm & Update {importPreviewData.length} Orders
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setIsImportPreviewOpen(false);
+                setImportPreviewData([]);
+              }}
+            >
+              Cancel
             </Button>
           </div>
         </DialogContent>
