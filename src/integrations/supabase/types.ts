@@ -218,6 +218,51 @@ export type Database = {
         }
         Relationships: []
       }
+      label_batch_exports: {
+        Row: {
+          created_at: string
+          delivery_date: string | null
+          delivery_round: string | null
+          export_date: string
+          export_name: string
+          exported_by: string
+          file_path: string | null
+          id: string
+          labels_per_page: number
+          order_count: number
+          order_ids: string[]
+          paper_size: string
+        }
+        Insert: {
+          created_at?: string
+          delivery_date?: string | null
+          delivery_round?: string | null
+          export_date?: string
+          export_name: string
+          exported_by: string
+          file_path?: string | null
+          id?: string
+          labels_per_page?: number
+          order_count: number
+          order_ids: string[]
+          paper_size?: string
+        }
+        Update: {
+          created_at?: string
+          delivery_date?: string | null
+          delivery_round?: string | null
+          export_date?: string
+          export_name?: string
+          exported_by?: string
+          file_path?: string | null
+          id?: string
+          labels_per_page?: number
+          order_count?: number
+          order_ids?: string[]
+          paper_size?: string
+        }
+        Relationships: []
+      }
       order_items: {
         Row: {
           created_at: string
