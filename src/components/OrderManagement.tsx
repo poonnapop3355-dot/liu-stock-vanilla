@@ -7,9 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Download, Upload, Edit, Eye, FileUp } from "lucide-react";
+import { Search, Download, Upload, Edit, Eye, FileUp, CheckSquare, Square } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface Order {
   id: string;
@@ -64,6 +66,10 @@ const OrderManagement = () => {
   }>>([]);
   const [manualMatchSearch, setManualMatchSearch] = useState<{[key: string]: string}>({});
   const [manualMatchResults, setManualMatchResults] = useState<{[key: string]: PartialOrder[]}>({});
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+  const [selectedOrderIds, setSelectedOrderIds] = useState<Set<string>>(new Set());
+  const [bulkStatus, setBulkStatus] = useState("");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -113,6 +119,70 @@ const OrderManagement = () => {
     const matchesStatus = statusFilter === "all" || order.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  // Pagination
+  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedOrders = filteredOrders.slice(startIndex, startIndex + itemsPerPage);
+
+  // Reset to page 1 when search/filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter]);
+
+  // Bulk operations
+  const toggleOrderSelection = (orderId: string) => {
+    const newSelected = new Set(selectedOrderIds);
+    if (newSelected.has(orderId)) {
+      newSelected.delete(orderId);
+    } else {
+      newSelected.add(orderId);
+    }
+    setSelectedOrderIds(newSelected);
+  };
+
+  const toggleAllOrders = () => {
+    if (selectedOrderIds.size === paginatedOrders.length) {
+      setSelectedOrderIds(new Set());
+    } else {
+      setSelectedOrderIds(new Set(paginatedOrders.map(o => o.id)));
+    }
+  };
+
+  const handleBulkStatusUpdate = async () => {
+    if (selectedOrderIds.size === 0 || !bulkStatus) {
+      toast({
+        title: "Error",
+        description: "Please select orders and a status",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ status: bulkStatus })
+        .in('id', Array.from(selectedOrderIds));
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `Updated ${selectedOrderIds.size} order(s) to ${bulkStatus}`
+      });
+
+      setSelectedOrderIds(new Set());
+      setBulkStatus("");
+      fetchOrders();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update orders",
+        variant: "destructive"
+      });
+    }
+  };
 
   const handleViewOrder = async (order: Order) => {
     setSelectedOrder(order);
@@ -471,35 +541,74 @@ const OrderManagement = () => {
 
       <Card>
         <CardHeader>
-          <div className="flex gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by order code, customer, or tracking number..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-8"
-              />
+          <div className="space-y-4">
+            <div className="flex gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by order code, customer, or tracking number..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-8"
+                />
+              </div>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="processing">Processing</SelectItem>
+                  <SelectItem value="shipped">Shipped</SelectItem>
+                  <SelectItem value="delivered">Delivered</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="processing">Processing</SelectItem>
-                <SelectItem value="shipped">Shipped</SelectItem>
-                <SelectItem value="delivered">Delivered</SelectItem>
-                <SelectItem value="cancelled">Cancelled</SelectItem>
-              </SelectContent>
-            </Select>
+            
+            {/* Bulk Operations */}
+            {selectedOrderIds.size > 0 && (
+              <div className="flex items-center gap-4 p-3 bg-muted rounded-lg">
+                <span className="text-sm font-medium">
+                  {selectedOrderIds.size} order(s) selected
+                </span>
+                <Select value={bulkStatus} onValueChange={setBulkStatus}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="Change status to..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="processing">Processing</SelectItem>
+                    <SelectItem value="shipped">Shipped</SelectItem>
+                    <SelectItem value="delivered">Delivered</SelectItem>
+                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button onClick={handleBulkStatusUpdate} size="sm">
+                  Update Status
+                </Button>
+                <Button 
+                  onClick={() => setSelectedOrderIds(new Set())} 
+                  variant="outline" 
+                  size="sm"
+                >
+                  Clear Selection
+                </Button>
+              </div>
+            )}
           </div>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-12">
+                  <Checkbox
+                    checked={selectedOrderIds.size === paginatedOrders.length && paginatedOrders.length > 0}
+                    onCheckedChange={toggleAllOrders}
+                  />
+                </TableHead>
                 <TableHead>Order Code</TableHead>
                 <TableHead>Customer</TableHead>
                 <TableHead>Order Date</TableHead>
@@ -511,8 +620,14 @@ const OrderManagement = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredOrders.map(order => (
+              {paginatedOrders.map(order => (
                 <TableRow key={order.id}>
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedOrderIds.has(order.id)}
+                      onCheckedChange={() => toggleOrderSelection(order.id)}
+                    />
+                  </TableCell>
                   <TableCell className="font-medium">{order.order_code}</TableCell>
                   <TableCell>{order.customer_contact.split('\n')[0]}</TableCell>
                   <TableCell>{order.order_date}</TableCell>
@@ -534,6 +649,51 @@ const OrderManagement = () => {
               ))}
             </TableBody>
           </Table>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="mt-4">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious 
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    />
+                  </PaginationItem>
+                  {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                    let pageNum;
+                    if (totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i;
+                    } else {
+                      pageNum = currentPage - 2 + i;
+                    }
+                    return (
+                      <PaginationItem key={pageNum}>
+                        <PaginationLink
+                          onClick={() => setCurrentPage(pageNum)}
+                          isActive={currentPage === pageNum}
+                          className="cursor-pointer"
+                        >
+                          {pageNum}
+                        </PaginationLink>
+                      </PaginationItem>
+                    );
+                  })}
+                  <PaginationItem>
+                    <PaginationNext 
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          )}
         </CardContent>
       </Card>
 
