@@ -38,7 +38,8 @@ const PrintLabel = () => {
   const [customRound, setCustomRound] = useState("");
   const [selectedDeliveryDate, setSelectedDeliveryDate] = useState<Date | undefined>(undefined);
   const [previewMode, setPreviewMode] = useState(false);
-  const labelsPerPage = 6; // Fixed at 6 labels per page (2x3 layout)
+  const [paperSize, setPaperSize] = useState<"A4" | "A5">("A4");
+  const [labelsPerPage, setLabelsPerPage] = useState<4 | 6 | 8>(6);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -245,23 +246,30 @@ const PrintLabel = () => {
     printWindow.document.close();
   };
 
-  const getLayoutConfig = (perPage: 4 | 6 | 8) => {
+  const getLayoutConfig = (perPage: 4 | 6 | 8, paper: "A4" | "A5") => {
+    // A5 is half the size of A4
+    const sizeMultiplier = paper === "A5" ? 0.7 : 1;
+    
     switch (perPage) {
       case 4:
         return {
           labelsPerRow: 2,
           labelsPerPage: 4,
           labelWidth: 'calc(50% - 0.3cm)',
-          labelHeight: '13.5cm',
-          margin: '0 0.3cm 0.3cm 0'
+          labelHeight: `${13.5 * sizeMultiplier}cm`,
+          margin: '0 0.3cm 0.3cm 0',
+          pageSize: paper,
+          pageMargin: paper === "A5" ? "0.3cm" : "0.4cm"
         };
       case 8:
         return {
           labelsPerRow: 2,
           labelsPerPage: 8,
           labelWidth: 'calc(50% - 0.15cm)',
-          labelHeight: '6.5cm',
-          margin: '0 0.15cm 0.15cm 0'
+          labelHeight: `${6.5 * sizeMultiplier}cm`,
+          margin: '0 0.15cm 0.15cm 0',
+          pageSize: paper,
+          pageMargin: paper === "A5" ? "0.25cm" : "0.4cm"
         };
       case 6:
       default:
@@ -269,21 +277,23 @@ const PrintLabel = () => {
           labelsPerRow: 2,
           labelsPerPage: 6,
           labelWidth: 'calc(50% - 0.15cm)',
-          labelHeight: '8.5cm',
-          margin: '0 0.15cm 0.15cm 0'
+          labelHeight: `${8.5 * sizeMultiplier}cm`,
+          margin: '0 0.15cm 0.15cm 0',
+          pageSize: paper,
+          pageMargin: paper === "A5" ? "0.25cm" : "0.4cm"
         };
     }
   };
 
   const generatePrintContent = (selectedOrdersData: OrderWithItems[]) => {
-    const layoutConfig = getLayoutConfig(labelsPerPage);
-    const { labelsPerRow, labelsPerPage: perPage, labelWidth, labelHeight, margin } = layoutConfig;
+    const layoutConfig = getLayoutConfig(labelsPerPage, paperSize);
+    const { labelsPerRow, labelsPerPage: perPage, labelWidth, labelHeight, margin, pageSize, pageMargin } = layoutConfig;
     
     const labelStyle = `
       <style>
         @page {
-          size: A4;
-          margin: 0.4cm;
+          size: ${pageSize};
+          margin: ${pageMargin};
         }
         body {
           font-family: 'Sarabun', 'Noto Sans Thai', 'Arial Unicode MS', Arial, sans-serif;
@@ -516,6 +526,33 @@ const PrintLabel = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
+              <Label>Paper Size</Label>
+              <Select value={paperSize} onValueChange={(value) => setPaperSize(value as "A4" | "A5")}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="A4">A4 (21 × 29.7 cm)</SelectItem>
+                  <SelectItem value="A5">A5 (14.8 × 21 cm)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
+              <Label>Labels Per Page</Label>
+              <Select value={labelsPerPage.toString()} onValueChange={(value) => setLabelsPerPage(parseInt(value) as 4 | 6 | 8)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="4">4 labels (2×2) - Large</SelectItem>
+                  <SelectItem value="6">6 labels (2×3) - Standard</SelectItem>
+                  <SelectItem value="8">8 labels (2×4) - Compact</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
               <Label>Delivery Date</Label>
               <div className="flex gap-2">
                 <DatePicker
@@ -571,7 +608,8 @@ const PrintLabel = () => {
             
             <div className="pt-4 border-t">
               <div className="text-sm text-muted-foreground">
-                <strong>Layout:</strong> 6 labels per page (2×3)
+                <div><strong>Paper:</strong> {paperSize}</div>
+                <div><strong>Layout:</strong> {labelsPerPage} labels per page (2×{labelsPerPage/2})</div>
               </div>
             </div>
           </CardContent>
@@ -646,7 +684,7 @@ const PrintLabel = () => {
       {previewMode && ordersWithItems.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Label Preview (6 labels per page - 2×3 layout)</CardTitle>
+            <CardTitle>Label Preview ({paperSize} - {labelsPerPage} labels per page)</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="border rounded-lg p-4 bg-background">
