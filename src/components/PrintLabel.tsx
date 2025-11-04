@@ -245,7 +245,7 @@ const PrintLabel = () => {
       <style>
         @page {
           size: A4;
-          margin: 0.4cm;
+          margin: 0.5cm;
         }
         body {
           font-family: 'Sarabun', 'Noto Sans Thai', 'Arial Unicode MS', Arial, sans-serif;
@@ -261,28 +261,25 @@ const PrintLabel = () => {
         .label {
           display: inline-block;
           vertical-align: top;
-          width: calc((100% - 0.25cm) / 2);
-          height: 7.5cm;
+          width: calc(50% - 0.15cm);
+          height: 9.2cm;
           border: 1.5px solid #333;
           padding: 0.2cm;
-          margin: 0 0.25cm 0.25cm 0;
+          margin: 0 0.3cm 0.3cm 0;
           box-sizing: border-box;
           page-break-inside: avoid;
           break-inside: avoid;
-          break-inside: avoid-page;
-          -webkit-region-break-inside: avoid;
-          -webkit-column-break-inside: avoid;
           overflow: hidden;
-          display: flex;
-          flex-direction: column;
           font-size: 12px; /* reset font size for children */
+        }
+        .label:nth-child(2n) {
+          margin-right: 0;
         }
         .label-header {
           text-align: center;
           margin-bottom: 0.15cm;
           padding-bottom: 0.1cm;
           border-bottom: 1.5px solid #333;
-          flex-shrink: 0;
         }
         .order-code {
           font-size: 13px;
@@ -292,7 +289,6 @@ const PrintLabel = () => {
         }
         .address-section {
           margin-bottom: 0.15cm;
-          flex-shrink: 0;
         }
         .address-title {
           font-size: 9px;
@@ -323,10 +319,7 @@ const PrintLabel = () => {
           background-color: white;
         }
         .items-section {
-          flex-grow: 1;
-          display: flex;
-          flex-direction: column;
-          min-height: 0;
+          margin-top: 0.1cm;
         }
         .items-title {
           font-size: 9px;
@@ -335,13 +328,12 @@ const PrintLabel = () => {
           padding: 0.1cm;
           border: 1px solid #333;
           margin-bottom: 0.05cm;
-          flex-shrink: 0;
         }
         .items-content {
           border: 1px solid #333;
           padding: 0.1cm;
           background-color: white;
-          flex-grow: 1;
+          min-height: 2.5cm;
           word-wrap: break-word;
           overflow-wrap: break-word;
           overflow: hidden;
@@ -432,7 +424,7 @@ const PrintLabel = () => {
       <style>
         @page {
           size: A4;
-          margin: 0.4cm;
+          margin: 0.5cm;
         }
         body {
           font-family: 'Sarabun', 'Noto Sans Thai', 'Arial Unicode MS', Arial, sans-serif;
@@ -448,28 +440,25 @@ const PrintLabel = () => {
         .label {
           display: inline-block;
           vertical-align: top;
-          width: calc((100% - 0.25cm) / 2);
-          height: 7.5cm;
+          width: calc(50% - 0.15cm);
+          height: 9.2cm;
           border: 1.5px solid #333;
           padding: 0.2cm;
-          margin: 0 0.25cm 0.25cm 0;
+          margin: 0 0.3cm 0.3cm 0;
           box-sizing: border-box;
           page-break-inside: avoid;
           break-inside: avoid;
-          break-inside: avoid-page;
-          -webkit-region-break-inside: avoid;
-          -webkit-column-break-inside: avoid;
           overflow: hidden;
-          display: flex;
-          flex-direction: column;
           font-size: 12px; /* reset font size for children */
+        }
+        .label:nth-child(2n) {
+          margin-right: 0;
         }
         .label-header {
           text-align: center;
           margin-bottom: 0.15cm;
           padding-bottom: 0.1cm;
           border-bottom: 1.5px solid #333;
-          flex-shrink: 0;
         }
         .order-code {
           font-size: 13px;
@@ -479,7 +468,6 @@ const PrintLabel = () => {
         }
         .address-section {
           margin-bottom: 0.15cm;
-          flex-shrink: 0;
         }
         .address-title {
           font-size: 9px;
@@ -510,10 +498,7 @@ const PrintLabel = () => {
           background-color: white;
         }
         .items-section {
-          flex-grow: 1;
-          display: flex;
-          flex-direction: column;
-          min-height: 0;
+          margin-top: 0.1cm;
         }
         .items-title {
           font-size: 9px;
@@ -522,13 +507,12 @@ const PrintLabel = () => {
           padding: 0.1cm;
           border: 1px solid #333;
           margin-bottom: 0.05cm;
-          flex-shrink: 0;
         }
         .items-content {
           border: 1px solid #333;
           padding: 0.1cm;
           background-color: white;
-          flex-grow: 1;
+          min-height: 2.5cm;
           word-wrap: break-word;
           overflow-wrap: break-word;
           overflow: hidden;
