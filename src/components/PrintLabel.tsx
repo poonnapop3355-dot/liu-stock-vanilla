@@ -5,13 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Printer, Download, X, Eye, EyeOff, Save, FileText } from "lucide-react";
+import { Printer, Download, X, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { DatePicker } from "@/components/DatePicker";
 import { format } from "date-fns";
-import { jsPDF } from "jspdf";
-import html2canvas from "html2canvas";
 
 interface Order {
   id: string;
@@ -42,8 +40,6 @@ const PrintLabel = () => {
   const [previewMode, setPreviewMode] = useState(false);
   const [paperSize, setPaperSize] = useState<"A4" | "A5">("A4");
   const [labelsPerPage, setLabelsPerPage] = useState<4 | 6 | 8>(6);
-  const [exportName, setExportName] = useState("");
-  const [isExporting, setIsExporting] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
