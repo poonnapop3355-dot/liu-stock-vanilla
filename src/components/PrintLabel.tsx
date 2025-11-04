@@ -268,9 +268,9 @@ const PrintLabel = () => {
         return {
           labelsPerRow: 2,
           labelsPerPage: 6,
-          labelWidth: 'calc(50% - 0.2cm)',
-          labelHeight: '9cm',
-          margin: '0 0.2cm 0.2cm 0'
+          labelWidth: 'calc(50% - 0.15cm)',
+          labelHeight: '8.5cm',
+          margin: '0 0.15cm 0.15cm 0'
         };
     }
   };
@@ -283,13 +283,13 @@ const PrintLabel = () => {
       <style>
         @page {
           size: A4;
-          margin: 0.5cm;
+          margin: 0.4cm;
         }
         body {
           font-family: 'Sarabun', 'Noto Sans Thai', 'Arial Unicode MS', Arial, sans-serif;
           margin: 0;
           padding: 0;
-          font-size: 12px;
+          font-size: 10px;
         }
         /* Use inline-block to prevent label splitting across pages */
         .labels-container {
@@ -301,47 +301,47 @@ const PrintLabel = () => {
           vertical-align: top;
           width: ${labelWidth};
           height: ${labelHeight};
-          border: 1.5px solid #333;
-          padding: 0.2cm;
+          border: 1px solid #333;
+          padding: 0.15cm;
           margin: ${margin};
           box-sizing: border-box;
           page-break-inside: avoid;
           break-inside: avoid;
           overflow: hidden;
-          font-size: 12px; /* reset font size for children */
+          font-size: 10px; /* reset font size for children */
         }
         .label:nth-child(2n) {
           margin-right: 0;
         }
         .label-header {
           text-align: center;
-          margin-bottom: 0.15cm;
-          padding-bottom: 0.1cm;
-          border-bottom: 1.5px solid #333;
+          margin-bottom: 0.1cm;
+          padding-bottom: 0.08cm;
+          border-bottom: 1px solid #333;
         }
         .order-code {
-          font-size: 13px;
+          font-size: 11px;
           font-weight: bold;
           word-wrap: break-word;
           overflow-wrap: break-word;
         }
         .address-section {
-          margin-bottom: 0.15cm;
+          margin-bottom: 0.1cm;
         }
         .address-title {
-          font-size: 9px;
+          font-size: 8px;
           font-weight: bold;
           background-color: #f0f0f0;
-          padding: 0.1cm;
-          margin-bottom: 0.05cm;
+          padding: 0.08cm;
+          margin-bottom: 0.03cm;
           border: 1px solid #333;
         }
         .address-content {
-          font-size: 8px;
-          line-height: 1.2;
-          padding: 0.08cm;
+          font-size: 7px;
+          line-height: 1.15;
+          padding: 0.06cm;
           border: 1px solid #333;
-          height: 1.1cm;
+          height: 1cm;
           word-wrap: break-word;
           overflow-wrap: break-word;
           hyphens: auto;
@@ -357,21 +357,21 @@ const PrintLabel = () => {
           background-color: white;
         }
         .items-section {
-          margin-top: 0.1cm;
+          margin-top: 0.08cm;
         }
         .items-title {
-          font-size: 9px;
+          font-size: 8px;
           font-weight: bold;
           background-color: #f0f0f0;
-          padding: 0.1cm;
+          padding: 0.08cm;
           border: 1px solid #333;
-          margin-bottom: 0.05cm;
+          margin-bottom: 0.03cm;
         }
         .items-content {
           border: 1px solid #333;
-          padding: 0.1cm;
+          padding: 0.08cm;
           background-color: white;
-          min-height: 2.5cm;
+          min-height: 2.2cm;
           word-wrap: break-word;
           overflow-wrap: break-word;
           overflow: hidden;
@@ -379,9 +379,9 @@ const PrintLabel = () => {
         .item-row {
           display: flex;
           justify-content: space-between;
-          font-size: 8px;
-          line-height: 1.2;
-          margin-bottom: 0.05cm;
+          font-size: 7px;
+          line-height: 1.15;
+          margin-bottom: 0.04cm;
         }
         .item-name {
           flex-grow: 1;
