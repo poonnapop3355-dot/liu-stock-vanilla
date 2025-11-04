@@ -5,9 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Printer, Download } from "lucide-react";
+import { Printer, Download, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { DatePicker } from "@/components/DatePicker";
+import { format } from "date-fns";
 
 interface Order {
   id: string;
@@ -34,6 +36,7 @@ const PrintLabel = () => {
   const [selectedRound, setSelectedRound] = useState("");
   const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
   const [customRound, setCustomRound] = useState("");
+  const [selectedDeliveryDate, setSelectedDeliveryDate] = useState<Date | undefined>(undefined);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -95,12 +98,25 @@ const PrintLabel = () => {
   };
 
   const getFilteredOrders = () => {
-    if (selectedRound === "custom") {
-      return orders;
-    } else if (selectedRound) {
-      return orders.filter(order => order.delivery_round === selectedRound);
+    let filtered = orders;
+
+    // Filter by delivery round
+    if (selectedRound && selectedRound !== "custom") {
+      filtered = filtered.filter(order => order.delivery_round === selectedRound);
+    } else if (!selectedRound) {
+      // If no round selected and no date filter, return empty
+      if (!selectedDeliveryDate) {
+        return [];
+      }
     }
-    return [];
+
+    // Filter by delivery date
+    if (selectedDeliveryDate) {
+      const formattedDate = format(selectedDeliveryDate, "yyyy-MM-dd");
+      filtered = filtered.filter(order => order.delivery_date === formattedDate);
+    }
+
+    return filtered;
   };
 
   const updateDeliveryRound = async () => {
@@ -632,11 +648,31 @@ const PrintLabel = () => {
         {/* Delivery Round Selection */}
         <Card>
           <CardHeader>
-            <CardTitle>Select Delivery Round</CardTitle>
+            <CardTitle>Filters</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label>Existing Delivery Rounds</Label>
+              <Label>Delivery Date</Label>
+              <div className="flex gap-2">
+                <DatePicker
+                  date={selectedDeliveryDate}
+                  onDateChange={setSelectedDeliveryDate}
+                  placeholder="Filter by delivery date"
+                />
+                {selectedDeliveryDate && (
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setSelectedDeliveryDate(undefined)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <Label>Delivery Round</Label>
               <Select value={selectedRound} onValueChange={handleRoundSelection}>
                 <SelectTrigger>
                   <SelectValue placeholder="Choose delivery round" />
@@ -694,7 +730,9 @@ const PrintLabel = () => {
           <CardContent>
             {filteredOrders.length === 0 ? (
               <p className="text-muted-foreground text-center py-8">
-                {selectedRound ? "No orders found for this delivery round" : "Please select a delivery round"}
+                {selectedDeliveryDate || selectedRound 
+                  ? "No orders found for the selected filters" 
+                  : "Please select a delivery date or delivery round"}
               </p>
             ) : (
               <div className="space-y-2 max-h-96 overflow-y-auto">
