@@ -38,7 +38,7 @@ const PrintLabel = () => {
   const [customRound, setCustomRound] = useState("");
   const [selectedDeliveryDate, setSelectedDeliveryDate] = useState<Date | undefined>(undefined);
   const [previewMode, setPreviewMode] = useState(false);
-  const [labelsPerPage, setLabelsPerPage] = useState<4 | 6 | 8>(6);
+  const labelsPerPage = 6; // Fixed at 6 labels per page (2x3 layout)
   const { toast } = useToast();
 
   useEffect(() => {
@@ -514,25 +514,12 @@ const PrintLabel = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Filters and Layout Settings */}
+        {/* Filters */}
         <Card>
           <CardHeader>
-            <CardTitle>Filters & Layout</CardTitle>
+            <CardTitle>Filters</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <Label>Labels Per Page</Label>
-              <Select value={labelsPerPage.toString()} onValueChange={(value) => setLabelsPerPage(parseInt(value) as 4 | 6 | 8)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="4">4 labels (2x2) - Large</SelectItem>
-                  <SelectItem value="6">6 labels (2x3) - Standard</SelectItem>
-                  <SelectItem value="8">8 labels (2x4) - Compact</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
             <div>
               <Label>Delivery Date</Label>
               <div className="flex gap-2">
@@ -586,6 +573,12 @@ const PrintLabel = () => {
                 </Button>
               </div>
             )}
+            
+            <div className="pt-4 border-t">
+              <div className="text-sm text-muted-foreground">
+                <strong>Layout:</strong> 6 labels per page (2×3)
+              </div>
+            </div>
           </CardContent>
         </Card>
 
@@ -658,7 +651,7 @@ const PrintLabel = () => {
       {previewMode && ordersWithItems.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Label Preview ({labelsPerPage} labels per page)</CardTitle>
+            <CardTitle>Label Preview (6 labels per page - 2×3 layout)</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="border rounded-lg p-4 bg-background">
@@ -677,7 +670,7 @@ const PrintLabel = () => {
                       key={order.id} 
                       className="border-2 border-border rounded p-3 text-xs"
                       style={{
-                        aspectRatio: labelsPerPage === 4 ? '1/1.35' : labelsPerPage === 8 ? '1/0.65' : '1/0.9'
+                        aspectRatio: '1/0.9'
                       }}
                     >
                       <div className="text-center border-b border-border pb-2 mb-2">
