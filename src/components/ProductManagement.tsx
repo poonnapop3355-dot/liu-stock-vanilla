@@ -323,10 +323,17 @@ const ProductManagement = () => {
         status: "active"
       });
       fetchProducts();
-    } catch (error) {
+    } catch (error: any) {
+      let errorMessage = "Failed to add product";
+      
+      // Check for duplicate SKU error
+      if (error?.code === '23505' || error?.message?.includes('duplicate key') || error?.message?.includes('products_sku_key')) {
+        errorMessage = `A product with SKU "${formData.sku}" already exists. Please use a different SKU.`;
+      }
+      
       toast({
         title: "Add Failed",
-        description: "Failed to add product",
+        description: errorMessage,
         variant: "destructive"
       });
     }
