@@ -462,11 +462,6 @@ const PrintLabel = () => {
           ${labelStyle}
         </head>
         <body>
-          <div class="no-print" style="text-align: center; padding: 1cm; background: #f5f5f5; margin-bottom: 1cm;">
-            <h2>Shipping Labels Preview</h2>
-            <p>${selectedOrdersData.length} ใบปะหน้า selected</p>
-            <button onclick="window.print()" style="padding: 0.5cm 1cm; font-size: 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Print Shipping Labels</button>
-          </div>
           <div class="labels-container">
             ${labelsHtml}
           </div>
