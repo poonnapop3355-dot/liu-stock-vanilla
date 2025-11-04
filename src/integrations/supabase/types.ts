@@ -159,7 +159,7 @@ export type Database = {
           accessed_fields: string[] | null
           customer_id: string | null
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           user_agent: string | null
           user_id: string
         }
@@ -169,7 +169,7 @@ export type Database = {
           accessed_fields?: string[] | null
           customer_id?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           user_agent?: string | null
           user_id: string
         }
@@ -179,7 +179,7 @@ export type Database = {
           accessed_fields?: string[] | null
           customer_id?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           user_agent?: string | null
           user_id?: string
         }
@@ -403,10 +403,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      add_admin_by_email: {
-        Args: { admin_email: string }
-        Returns: undefined
-      }
+      add_admin_by_email: { Args: { admin_email: string }; Returns: undefined }
       create_admin_user: {
         Args: {
           admin_email: string
@@ -422,14 +419,8 @@ export type Database = {
         }
         Returns: boolean
       }
-      is_authenticated: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-      is_authorized_staff: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
+      is_authenticated: { Args: never; Returns: boolean }
+      is_authorized_staff: { Args: never; Returns: boolean }
       log_customer_access: {
         Args: {
           p_access_type?: string
@@ -438,10 +429,7 @@ export type Database = {
         }
         Returns: undefined
       }
-      validate_customer_operation: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
+      validate_customer_operation: { Args: never; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "staff" | "customer"
