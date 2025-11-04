@@ -56,6 +56,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email,
       password,
     });
+
+    // Log the login activity
+    if (!error) {
+      try {
+        await supabase.rpc('log_user_activity', {
+          p_activity_type: 'login',
+          p_activity_description: 'User logged in successfully'
+        });
+      } catch (logError) {
+        console.error('Failed to log activity:', logError);
+      }
+    }
+
     return { error };
   };
 
@@ -70,10 +83,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         data: userData,
       }
     });
+
+    // Log the signup activity
+    if (!error) {
+      try {
+        await supabase.rpc('log_user_activity', {
+          p_activity_type: 'create',
+          p_activity_description: 'New user account created'
+        });
+      } catch (logError) {
+        console.error('Failed to log activity:', logError);
+      }
+    }
+
     return { error };
   };
 
   const signOut = async () => {
+    // Log the logout activity before signing out
+    try {
+      await supabase.rpc('log_user_activity', {
+        p_activity_type: 'logout',
+        p_activity_description: 'User logged out'
+      });
+    } catch (logError) {
+      console.error('Failed to log activity:', logError);
+    }
+
     const { error } = await supabase.auth.signOut();
     if (error) {
       toast({

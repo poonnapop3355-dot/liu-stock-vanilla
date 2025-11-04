@@ -78,6 +78,7 @@ const Sidebar = ({ activeView, onViewChange }: SidebarProps) => {
     { id: 'crm', label: 'CRM', icon: UserCheck },
     { id: 'print', label: 'Print Labels', icon: Printer },
     { id: 'users', label: 'Users', icon: Users },
+    { id: 'activity', label: 'Activity Log', icon: TrendingUp },
     { id: 'guide', label: 'How to Use', icon: HelpCircle },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];

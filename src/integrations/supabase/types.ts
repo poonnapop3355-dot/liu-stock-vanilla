@@ -377,6 +377,45 @@ export type Database = {
         }
         Relationships: []
       }
+      user_activity_logs: {
+        Row: {
+          activity_description: string
+          activity_type: Database["public"]["Enums"]["activity_type"]
+          created_at: string
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          ip_address: string | null
+          metadata: Json | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          activity_description: string
+          activity_type?: Database["public"]["Enums"]["activity_type"]
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          activity_description?: string
+          activity_type?: Database["public"]["Enums"]["activity_type"]
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -429,9 +468,28 @@ export type Database = {
         }
         Returns: undefined
       }
+      log_user_activity: {
+        Args: {
+          p_activity_description: string
+          p_activity_type: Database["public"]["Enums"]["activity_type"]
+          p_entity_id?: string
+          p_entity_type?: string
+          p_metadata?: Json
+        }
+        Returns: string
+      }
       validate_customer_operation: { Args: never; Returns: boolean }
     }
     Enums: {
+      activity_type:
+        | "login"
+        | "logout"
+        | "create"
+        | "update"
+        | "delete"
+        | "view"
+        | "export"
+        | "other"
       app_role: "admin" | "staff" | "customer"
     }
     CompositeTypes: {
@@ -560,6 +618,16 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      activity_type: [
+        "login",
+        "logout",
+        "create",
+        "update",
+        "delete",
+        "view",
+        "export",
+        "other",
+      ],
       app_role: ["admin", "staff", "customer"],
     },
   },

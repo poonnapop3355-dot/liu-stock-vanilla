@@ -10,6 +10,7 @@ import OrderManagement from "@/components/OrderManagement";
 import CRMManagement from "@/components/CRMManagement";
 import PrintLabel from "@/components/PrintLabel";
 import UserManagement from "@/components/UserManagement";
+import UserActivityLog from "@/components/UserActivityLog";
 import Settings from "@/components/Settings";
 import Auth from "@/components/Auth";
 import BookManagement from "@/components/BookManagement";
@@ -52,6 +53,8 @@ const Index = () => {
         return <RoleGuard requiredRole="staff"><PrintLabel /></RoleGuard>;
       case 'users':
         return <RoleGuard requiredRole="admin"><UserManagement /></RoleGuard>;
+      case 'activity':
+        return <RoleGuard requiredRole="admin"><UserActivityLog /></RoleGuard>;
       case 'guide':
         return <UserGuide />;
       case 'settings':
