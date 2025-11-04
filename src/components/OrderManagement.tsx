@@ -33,6 +33,13 @@ interface OrderItem {
   total_price: number;
 }
 
+interface PartialOrder {
+  id: string;
+  order_code: string;
+  customer_contact: string;
+  tracking_number: string | null;
+}
+
 const OrderManagement = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -55,6 +62,8 @@ const OrderManagement = () => {
     phone: string;
     tracking: string;
   }>>([]);
+  const [manualMatchSearch, setManualMatchSearch] = useState<{[key: string]: string}>({});
+  const [manualMatchResults, setManualMatchResults] = useState<{[key: string]: PartialOrder[]}>({});
   const { toast } = useToast();
 
   useEffect(() => {
@@ -341,6 +350,8 @@ const OrderManagement = () => {
       setIsImportPreviewOpen(false);
       setImportPreviewData([]);
       setUnmatchedEntries([]);
+      setManualMatchSearch({});
+      setManualMatchResults({});
 
       toast({
         title: "Import Complete",
@@ -354,6 +365,63 @@ const OrderManagement = () => {
         variant: "destructive"
       });
     }
+  };
+
+  const searchOrdersForManualMatch = async (searchTerm: string, entryKey: string) => {
+    if (!searchTerm || searchTerm.length < 2) {
+      setManualMatchResults({});
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('id, order_code, customer_contact, tracking_number')
+        .is('tracking_number', null)
+        .or(`order_code.ilike.%${searchTerm}%,customer_contact.ilike.%${searchTerm}%`)
+        .limit(5);
+
+      if (error) throw error;
+
+      setManualMatchResults({
+        ...manualMatchResults,
+        [entryKey]: data || []
+      });
+    } catch (error) {
+      console.error('Search error:', error);
+    }
+  };
+
+  const addManualMatch = (entry: {phone: string; tracking: string}, order: PartialOrder) => {
+    // Add to matched data
+    setImportPreviewData([
+      ...importPreviewData,
+      {
+        orderId: order.id,
+        orderCode: order.order_code,
+        customerContact: order.customer_contact,
+        phone: entry.phone,
+        tracking: entry.tracking
+      }
+    ]);
+
+    // Remove from unmatched
+    setUnmatchedEntries(unmatchedEntries.filter(e => e.phone !== entry.phone || e.tracking !== entry.tracking));
+
+    // Clear search
+    const entryKey = `${entry.phone}-${entry.tracking}`;
+    const newSearch = {...manualMatchSearch};
+    delete newSearch[entryKey];
+    setManualMatchSearch(newSearch);
+
+    const newResults = {...manualMatchResults};
+    delete newResults[entryKey];
+    setManualMatchResults(newResults);
+
+    toast({
+      title: "Match Added",
+      description: `${order.order_code} will be updated with tracking ${entry.tracking}`,
+    });
   };
 
   const getStatusBadge = (status: string) => {
@@ -616,28 +684,88 @@ const OrderManagement = () => {
             {unmatchedEntries.length > 0 && (
               <div>
                 <h3 className="text-sm font-semibold mb-2 text-orange-600">Unmatched Entries (No order found)</h3>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Phone Number</TableHead>
-                      <TableHead>Tracking Number</TableHead>
-                      <TableHead>Reason</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {unmatchedEntries.map((entry, index) => (
-                      <TableRow key={index}>
-                        <TableCell>{entry.phone}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{entry.tracking}</Badge>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground text-sm">
-                          No order found or already has tracking
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                <div className="space-y-4">
+                  {unmatchedEntries.map((entry, index) => {
+                    const entryKey = `${entry.phone}-${entry.tracking}`;
+                    const searchResults = manualMatchResults[entryKey] || [];
+                    
+                    return (
+                      <div key={index} className="border rounded-lg p-4 space-y-3">
+                        <div className="grid grid-cols-3 gap-4">
+                          <div>
+                            <Label className="text-xs text-muted-foreground">Phone Number</Label>
+                            <p className="font-medium">{entry.phone}</p>
+                          </div>
+                          <div>
+                            <Label className="text-xs text-muted-foreground">Tracking Number</Label>
+                            <Badge variant="outline">{entry.tracking}</Badge>
+                          </div>
+                          <div>
+                            <Label className="text-xs text-muted-foreground">Status</Label>
+                            <p className="text-sm text-orange-600">No automatic match</p>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label className="text-sm">Search by Order Code or Customer Name</Label>
+                          <div className="flex gap-2">
+                            <Input
+                              placeholder="Enter order code or customer name..."
+                              value={manualMatchSearch[entryKey] || ''}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                setManualMatchSearch({
+                                  ...manualMatchSearch,
+                                  [entryKey]: value
+                                });
+                                searchOrdersForManualMatch(value, entryKey);
+                              }}
+                            />
+                          </div>
+                          
+                          {searchResults.length > 0 && (
+                            <div className="border rounded-md">
+                              <Table>
+                                <TableHeader>
+                                  <TableRow>
+                                    <TableHead className="w-32">Order Code</TableHead>
+                                    <TableHead>Customer</TableHead>
+                                    <TableHead className="w-24">Action</TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {searchResults.map((order) => (
+                                    <TableRow key={order.id}>
+                                      <TableCell className="font-medium">{order.order_code}</TableCell>
+                                      <TableCell>
+                                        <div className="max-w-xs truncate" title={order.customer_contact}>
+                                          {order.customer_contact.split('\n')[0]}
+                                        </div>
+                                      </TableCell>
+                                      <TableCell>
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() => addManualMatch(entry, order)}
+                                        >
+                                          Match
+                                        </Button>
+                                      </TableCell>
+                                    </TableRow>
+                                  ))}
+                                </TableBody>
+                              </Table>
+                            </div>
+                          )}
+                          
+                          {manualMatchSearch[entryKey] && manualMatchSearch[entryKey].length >= 2 && searchResults.length === 0 && (
+                            <p className="text-sm text-muted-foreground">No orders found matching "{manualMatchSearch[entryKey]}"</p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
@@ -657,6 +785,8 @@ const OrderManagement = () => {
                 setIsImportPreviewOpen(false);
                 setImportPreviewData([]);
                 setUnmatchedEntries([]);
+                setManualMatchSearch({});
+                setManualMatchResults({});
               }}
             >
               Cancel
