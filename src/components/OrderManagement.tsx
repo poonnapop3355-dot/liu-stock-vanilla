@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Download, Upload, Edit, Eye } from "lucide-react";
+import { Search, Download, Upload, Edit, Eye, FileUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -181,6 +181,124 @@ const OrderManagement = () => {
     reader.readAsText(file);
   };
 
+  const importTrackingFromPDF = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.type !== 'application/pdf') {
+      toast({
+        title: "Error",
+        description: "Please upload a PDF file",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      // For now, show instructions to user about expected format
+      toast({
+        title: "PDF Import",
+        description: "Processing shipping manifest PDF...",
+      });
+
+      // Parse PDF using document parsing API
+      const formData = new FormData();
+      formData.append('file', file);
+
+      // Read file as text and try to extract tracking info
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const text = e.target?.result as string;
+          
+          // Extract tracking numbers and phone numbers using regex
+          // Pattern for Thai phone numbers: 0XXXXXXXXX (10 digits)
+          const phonePattern = /0\d{9}/g;
+          // Pattern for tracking numbers (alphanumeric)
+          const trackingPattern = /([A-Z0-9]{10,20})/g;
+          
+          // Parse line by line to match phone with tracking
+          const lines = text.split('\n');
+          const updates: { phone: string; tracking: string }[] = [];
+          
+          for (const line of lines) {
+            const phones = line.match(phonePattern);
+            const trackings = line.match(trackingPattern);
+            
+            if (phones && trackings) {
+              // Match first phone with first tracking on same line
+              updates.push({
+                phone: phones[0],
+                tracking: trackings[trackings.length - 1] // Usually tracking is last
+              });
+            }
+          }
+
+          if (updates.length === 0) {
+            toast({
+              title: "No data found",
+              description: "Could not extract tracking numbers from PDF. Please check the format.",
+              variant: "destructive"
+            });
+            return;
+          }
+
+          // Match and update orders
+          let successCount = 0;
+          let notFoundCount = 0;
+
+          for (const update of updates) {
+            // Find order by phone number in customer_contact
+            const { data: matchingOrders, error } = await supabase
+              .from('orders')
+              .select('id, order_code, tracking_number')
+              .ilike('customer_contact', `%${update.phone}%`)
+              .is('tracking_number', null);
+
+            if (error) throw error;
+
+            if (matchingOrders && matchingOrders.length > 0) {
+              // Update first matching order
+              const { error: updateError } = await supabase
+                .from('orders')
+                .update({ tracking_number: update.tracking })
+                .eq('id', matchingOrders[0].id);
+
+              if (!updateError) {
+                successCount++;
+              }
+            } else {
+              notFoundCount++;
+            }
+          }
+
+          await fetchOrders();
+
+          toast({
+            title: "Import Complete",
+            description: `Updated ${successCount} orders. ${notFoundCount} phone numbers not found in pending orders.`,
+          });
+        } catch (error) {
+          console.error('Parse error:', error);
+          toast({
+            title: "Error",
+            description: "Failed to parse PDF file",
+            variant: "destructive"
+          });
+        }
+      };
+
+      reader.readAsText(file);
+    } catch (error) {
+      console.error('Import error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to import tracking numbers",
+        variant: "destructive"
+      });
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     const variants: { [key: string]: "default" | "secondary" | "destructive" | "outline" } = {
       pending: "outline",
@@ -205,12 +323,23 @@ const OrderManagement = () => {
             <Upload className="h-4 w-4 mr-2" />
             Import CSV
           </Button>
+          <Button variant="outline" onClick={() => document.getElementById('pdf-upload')?.click()}>
+            <FileUp className="h-4 w-4 mr-2" />
+            Import Tracking (PDF)
+          </Button>
           <input
             id="csv-upload"
             type="file"
             accept=".csv"
             style={{ display: 'none' }}
             onChange={importFromCSV}
+          />
+          <input
+            id="pdf-upload"
+            type="file"
+            accept=".pdf"
+            style={{ display: 'none' }}
+            onChange={importTrackingFromPDF}
           />
         </div>
       </div>
