@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Printer, Download, X, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { escapeHtml } from "@/lib/utils";
 import { DatePicker } from "@/components/DatePicker";
 import { format } from "date-fns";
 
@@ -427,7 +428,7 @@ const PrintLabel = () => {
       
       const itemsHtml = order.items.map(item => `
         <div class="item-row">
-          <div class="item-name">${item.product_name}</div>
+          <div class="item-name">${escapeHtml(item.product_name)}</div>
           <div class="item-qty">จำนวน ${item.quantity}</div>
         </div>
       `).join('');
@@ -436,17 +437,17 @@ const PrintLabel = () => {
         ${shouldPageBreak ? '<div class="page-break"></div>' : ''}
         <div class="label">
           <div class="label-header">
-            <div class="order-code">ORDER-${order.order_code}</div>
+            <div class="order-code">ORDER-${escapeHtml(order.order_code)}</div>
           </div>
           
           <div class="address-section">
             <div class="address-title">ที่อยู่ผู้ส่ง (FROM)</div>
-            <div class="address-content sender-address">${senderAddress}</div>
+            <div class="address-content sender-address">${escapeHtml(senderAddress)}</div>
           </div>
           
           <div class="address-section">
             <div class="address-title">ที่อยู่ผู้รับ (TO)</div>
-            <div class="address-content receiver-address">${receiverAddress}</div>
+            <div class="address-content receiver-address">${escapeHtml(receiverAddress)}</div>
           </div>
           
           <div class="items-section">

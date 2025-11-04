@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Search, Plus, Minus, ShoppingCart, X, Printer, Package, Calendar, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { escapeHtml } from "@/lib/utils";
 import { DatePicker } from "@/components/DatePicker";
 
 const SalesManagement = () => {
@@ -97,21 +98,21 @@ const SalesManagement = () => {
         </head>
         <body>
           <div class="header">Liu Stock - Packing Slip</div>
-          <div class="info"><strong>Sale ID:</strong> ${sale.saleId}</div>
-          <div class="info"><strong>Customer:</strong> ${sale.customer}</div>
-          <div class="info"><strong>Date:</strong> ${new Date(sale.createdAt).toLocaleDateString()}</div>
-          <div class="info"><strong>Shipping Address:</strong><br>${sale.shippingInfo.address}</div>
+          <div class="info"><strong>Sale ID:</strong> ${escapeHtml(sale.saleId)}</div>
+          <div class="info"><strong>Customer:</strong> ${escapeHtml(sale.customer)}</div>
+          <div class="info"><strong>Date:</strong> ${escapeHtml(new Date(sale.createdAt).toLocaleDateString())}</div>
+          <div class="info"><strong>Shipping Address:</strong><br>${escapeHtml(sale.shippingInfo.address)}</div>
           <table>
             <tr><th>Product</th><th>Quantity</th><th>Price</th></tr>
             ${sale.items.map(item => `
               <tr>
-                <td>${item.name}</td>
+                <td>${escapeHtml(item.name)}</td>
                 <td>${item.quantity}</td>
-                <td>฿{item.priceAtSale}</td>
+                <td>฿${item.priceAtSale}</td>
               </tr>
             `).join('')}
           </table>
-          <p><strong>Total: ฿{sale.totalAmount}</strong></p>
+          <p><strong>Total: ฿${sale.totalAmount}</strong></p>
         </body>
       </html>
     `;

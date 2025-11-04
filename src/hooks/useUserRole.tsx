@@ -28,13 +28,22 @@ export const useUserRole = () => {
       
       if (error) {
         console.error('Error fetching user role:', error);
-        setRole('staff'); // Default to staff
+        // Security: Deny access on error instead of defaulting to staff
+        setRole(null);
+        setLoading(false);
+        return;
+      }
+      
+      if (data?.role) {
+        setRole(data.role);
       } else {
-        setRole(data?.role || 'staff');
+        // User exists but has no role assigned
+        setRole(null);
       }
     } catch (error) {
       console.error('Error fetching user role:', error);
-      setRole('staff');
+      // Security: Deny access on exception instead of defaulting to staff
+      setRole(null);
     } finally {
       setLoading(false);
     }
