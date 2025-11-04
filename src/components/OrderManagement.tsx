@@ -495,14 +495,16 @@ const OrderManagement = () => {
   };
 
   const getStatusBadge = (status: string) => {
-    const variants: { [key: string]: "default" | "secondary" | "destructive" | "outline" } = {
-      pending: "outline",
-      processing: "default",
-      shipped: "secondary",
-      delivered: "default",
-      cancelled: "destructive"
+    const statusConfig: { [key: string]: { variant: "default" | "secondary" | "destructive" | "outline", label: string, className?: string } } = {
+      pending: { variant: "outline", label: "Pending", className: "border-warning text-warning" },
+      processing: { variant: "default", label: "Processing", className: "bg-primary text-primary-foreground" },
+      shipped: { variant: "secondary", label: "Shipped", className: "bg-accent text-accent-foreground" },
+      delivered: { variant: "default", label: "Delivered", className: "bg-success text-success-foreground" },
+      cancelled: { variant: "destructive", label: "Cancelled" }
     };
-    return <Badge variant={variants[status] || "outline"}>{status}</Badge>;
+    
+    const config = statusConfig[status] || { variant: "outline", label: status.charAt(0).toUpperCase() + status.slice(1) };
+    return <Badge variant={config.variant} className={config.className}>{config.label}</Badge>;
   };
 
   return (
