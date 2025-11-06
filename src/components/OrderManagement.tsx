@@ -343,7 +343,7 @@ const OrderManagement = () => {
           if (updates.length === 0) {
             toast({
               title: "No data found",
-              description: "Could not extract tracking numbers from PDF. Please check the format.",
+              description: "Could not extract tracking numbers from image. Please check the format.",
               variant: "destructive"
             });
             return;
@@ -391,7 +391,7 @@ const OrderManagement = () => {
           if (previewMatches.length === 0 && unmatched.length > 0) {
             toast({
               title: "No matches found",
-              description: `${unmatched.length} phone numbers in the PDF don't match any orders without tracking numbers.`,
+              description: `${unmatched.length} phone numbers in the image don't match any orders without tracking numbers.`,
               variant: "destructive"
             });
             setUnmatchedEntries(unmatched);
@@ -408,7 +408,7 @@ const OrderManagement = () => {
           console.error('Parse error:', error);
           toast({
             title: "Error",
-            description: "Failed to parse PDF file",
+            description: "Failed to parse image file",
             variant: "destructive"
           });
         }
@@ -576,7 +576,7 @@ const OrderManagement = () => {
           <input
             id="pdf-upload"
             type="file"
-            accept=".pdf"
+            accept=".jpg,.jpeg,image/jpeg"
             style={{ display: 'none' }}
             onChange={importTrackingFromPDF}
           />
