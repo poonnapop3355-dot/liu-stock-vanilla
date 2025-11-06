@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Progress } from "@/components/ui/progress";
 import { createWorker } from 'tesseract.js';
 
 interface Order {
@@ -72,6 +73,9 @@ const OrderManagement = () => {
   const [itemsPerPage] = useState(10);
   const [selectedOrderIds, setSelectedOrderIds] = useState<Set<string>>(new Set());
   const [bulkStatus, setBulkStatus] = useState("");
+  const [ocrProgress, setOcrProgress] = useState(0);
+  const [isOcrProcessing, setIsOcrProcessing] = useState(false);
+  const [ocrStatus, setOcrStatus] = useState("");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -312,14 +316,32 @@ const OrderManagement = () => {
     }
 
     try {
-      // Show initial progress
-      toast({
-        title: "OCR Processing",
-        description: "Extracting text from image...",
-      });
+      // Show progress dialog
+      setIsOcrProcessing(true);
+      setOcrProgress(0);
+      setOcrStatus("Initializing OCR...");
 
-      // Create Tesseract worker
-      const worker = await createWorker('eng');
+      // Create Tesseract worker with progress callback
+      const worker = await createWorker('eng', 1, {
+        logger: (m) => {
+          if (m.status === 'loading tesseract core') {
+            setOcrStatus('Loading OCR engine...');
+            setOcrProgress(m.progress * 20);
+          } else if (m.status === 'initializing tesseract') {
+            setOcrStatus('Initializing OCR...');
+            setOcrProgress(20 + m.progress * 20);
+          } else if (m.status === 'loading language traineddata') {
+            setOcrStatus('Loading language data...');
+            setOcrProgress(40 + m.progress * 20);
+          } else if (m.status === 'initializing api') {
+            setOcrStatus('Preparing OCR...');
+            setOcrProgress(60 + m.progress * 10);
+          } else if (m.status === 'recognizing text') {
+            setOcrStatus('Extracting text from image...');
+            setOcrProgress(70 + m.progress * 30);
+          }
+        }
+      });
       
       // Perform OCR on the image
       const { data: { text } } = await worker.recognize(file);
@@ -327,10 +349,8 @@ const OrderManagement = () => {
       // Terminate worker
       await worker.terminate();
 
-      toast({
-        title: "Text Extracted",
-        description: "Matching tracking numbers with orders...",
-      });
+      setOcrStatus("Processing extracted text...");
+      setOcrProgress(100);
 
       // Extract tracking numbers and phone numbers using regex
       const phonePattern = /0\d{9}/g;
@@ -351,6 +371,9 @@ const OrderManagement = () => {
           });
         }
       }
+
+      // Close progress dialog
+      setIsOcrProcessing(false);
 
       if (updates.length === 0) {
         toast({
@@ -418,6 +441,7 @@ const OrderManagement = () => {
 
     } catch (error) {
       console.error('OCR error:', error);
+      setIsOcrProcessing(false);
       toast({
         title: "Error",
         description: "Failed to process image. Please try again.",
@@ -866,6 +890,27 @@ const OrderManagement = () => {
             <Button onClick={updateOrder} className="w-full">
               Update Order
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* OCR Progress Dialog */}
+      <Dialog open={isOcrProcessing} onOpenChange={() => {}}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Processing Image</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">{ocrStatus}</span>
+                <span className="font-medium">{Math.round(ocrProgress)}%</span>
+              </div>
+              <Progress value={ocrProgress} className="h-2" />
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Please wait while we extract text from your image...
+            </p>
           </div>
         </DialogContent>
       </Dialog>
