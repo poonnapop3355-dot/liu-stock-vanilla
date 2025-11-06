@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { Checkbox } from "@/components/ui/checkbox";
+import { createWorker } from 'tesseract.js';
 
 interface Order {
   id: string;
@@ -300,126 +301,126 @@ const OrderManagement = () => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    if (file.type !== 'application/pdf') {
+    // Check if file is an image
+    if (!file.type.startsWith('image/')) {
       toast({
         title: "Error",
-        description: "Please upload a PDF file",
+        description: "Please upload an image file (JPG, JPEG, PNG)",
         variant: "destructive"
       });
       return;
     }
 
     try {
+      // Show initial progress
       toast({
-        title: "PDF Import",
-        description: "Processing shipping manifest PDF...",
+        title: "OCR Processing",
+        description: "Extracting text from image...",
       });
 
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        try {
-          const text = e.target?.result as string;
-          
-          // Extract tracking numbers and phone numbers using regex
-          const phonePattern = /0\d{9}/g;
-          const trackingPattern = /([A-Z0-9]{10,20})/g;
-          
-          // Parse line by line to match phone with tracking
-          const lines = text.split('\n');
-          const updates: { phone: string; tracking: string }[] = [];
-          
-          for (const line of lines) {
-            const phones = line.match(phonePattern);
-            const trackings = line.match(trackingPattern);
-            
-            if (phones && trackings) {
-              updates.push({
-                phone: phones[0],
-                tracking: trackings[trackings.length - 1]
-              });
-            }
-          }
+      // Create Tesseract worker
+      const worker = await createWorker('eng');
+      
+      // Perform OCR on the image
+      const { data: { text } } = await worker.recognize(file);
+      
+      // Terminate worker
+      await worker.terminate();
 
-          if (updates.length === 0) {
-            toast({
-              title: "No data found",
-              description: "Could not extract tracking numbers from image. Please check the format.",
-              variant: "destructive"
-            });
-            return;
-          }
+      toast({
+        title: "Text Extracted",
+        description: "Matching tracking numbers with orders...",
+      });
 
-          // Match orders and prepare preview
-          const previewMatches: Array<{
-            orderId: string;
-            orderCode: string;
-            customerContact: string;
-            phone: string;
-            tracking: string;
-          }> = [];
-          
-          const unmatched: Array<{
-            phone: string;
-            tracking: string;
-          }> = [];
-
-          for (const update of updates) {
-            const { data: matchingOrders, error } = await supabase
-              .from('orders')
-              .select('id, order_code, customer_contact, tracking_number')
-              .ilike('customer_contact', `%${update.phone}%`)
-              .is('tracking_number', null);
-
-            if (error) throw error;
-
-            if (matchingOrders && matchingOrders.length > 0) {
-              previewMatches.push({
-                orderId: matchingOrders[0].id,
-                orderCode: matchingOrders[0].order_code,
-                customerContact: matchingOrders[0].customer_contact,
-                phone: update.phone,
-                tracking: update.tracking
-              });
-            } else {
-              unmatched.push({
-                phone: update.phone,
-                tracking: update.tracking
-              });
-            }
-          }
-
-          if (previewMatches.length === 0 && unmatched.length > 0) {
-            toast({
-              title: "No matches found",
-              description: `${unmatched.length} phone numbers in the image don't match any orders without tracking numbers.`,
-              variant: "destructive"
-            });
-            setUnmatchedEntries(unmatched);
-            setIsImportPreviewOpen(true);
-            return;
-          }
-
-          // Show preview dialog
-          setImportPreviewData(previewMatches);
-          setUnmatchedEntries(unmatched);
-          setIsImportPreviewOpen(true);
-
-        } catch (error) {
-          console.error('Parse error:', error);
-          toast({
-            title: "Error",
-            description: "Failed to parse image file",
-            variant: "destructive"
+      // Extract tracking numbers and phone numbers using regex
+      const phonePattern = /0\d{9}/g;
+      const trackingPattern = /([A-Z0-9]{10,20})/g;
+      
+      // Parse line by line to match phone with tracking
+      const lines = text.split('\n');
+      const updates: { phone: string; tracking: string }[] = [];
+      
+      for (const line of lines) {
+        const phones = line.match(phonePattern);
+        const trackings = line.match(trackingPattern);
+        
+        if (phones && trackings) {
+          updates.push({
+            phone: phones[0],
+            tracking: trackings[trackings.length - 1]
           });
         }
-      };
+      }
 
-      reader.readAsText(file);
+      if (updates.length === 0) {
+        toast({
+          title: "No data found",
+          description: "Could not extract tracking numbers from image. Please check the format.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Match orders and prepare preview
+      const previewMatches: Array<{
+        orderId: string;
+        orderCode: string;
+        customerContact: string;
+        phone: string;
+        tracking: string;
+      }> = [];
+      
+      const unmatched: Array<{
+        phone: string;
+        tracking: string;
+      }> = [];
+
+      for (const update of updates) {
+        const { data: matchingOrders, error } = await supabase
+          .from('orders')
+          .select('id, order_code, customer_contact, tracking_number')
+          .ilike('customer_contact', `%${update.phone}%`)
+          .is('tracking_number', null);
+
+        if (error) throw error;
+
+        if (matchingOrders && matchingOrders.length > 0) {
+          previewMatches.push({
+            orderId: matchingOrders[0].id,
+            orderCode: matchingOrders[0].order_code,
+            customerContact: matchingOrders[0].customer_contact,
+            phone: update.phone,
+            tracking: update.tracking
+          });
+        } else {
+          unmatched.push({
+            phone: update.phone,
+            tracking: update.tracking
+          });
+        }
+      }
+
+      if (previewMatches.length === 0 && unmatched.length > 0) {
+        toast({
+          title: "No matches found",
+          description: `${unmatched.length} phone numbers in the image don't match any orders without tracking numbers.`,
+          variant: "destructive"
+        });
+        setUnmatchedEntries(unmatched);
+        setIsImportPreviewOpen(true);
+        return;
+      }
+
+      // Show preview dialog
+      setImportPreviewData(previewMatches);
+      setUnmatchedEntries(unmatched);
+      setIsImportPreviewOpen(true);
+
     } catch (error) {
-      console.error('Import error:', error);
+      console.error('OCR error:', error);
       toast({
         title: "Error",
-        description: "Failed to import tracking numbers",
+        description: "Failed to process image. Please try again.",
         variant: "destructive"
       });
     }
@@ -576,7 +577,7 @@ const OrderManagement = () => {
           <input
             id="pdf-upload"
             type="file"
-            accept=".jpg,.jpeg,image/jpeg"
+            accept=".jpg,.jpeg,.png,image/jpeg,image/png"
             style={{ display: 'none' }}
             onChange={importTrackingFromPDF}
           />
