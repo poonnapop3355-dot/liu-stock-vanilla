@@ -76,6 +76,8 @@ const OrderManagement = () => {
   const [ocrProgress, setOcrProgress] = useState(0);
   const [isOcrProcessing, setIsOcrProcessing] = useState(false);
   const [ocrStatus, setOcrStatus] = useState("");
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [totalImages, setTotalImages] = useState(0);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -301,16 +303,50 @@ const OrderManagement = () => {
     reader.readAsText(file);
   };
 
-  const importTrackingFromPDF = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  const processImageWithOCR = async (file: File, imageIndex: number, totalFiles: number) => {
+    // Create Tesseract worker with progress callback
+    const worker = await createWorker('eng', 1, {
+      logger: (m) => {
+        if (m.status === 'loading tesseract core') {
+          setOcrStatus(`Image ${imageIndex + 1}/${totalFiles}: Loading OCR engine...`);
+          setOcrProgress(m.progress * 20);
+        } else if (m.status === 'initializing tesseract') {
+          setOcrStatus(`Image ${imageIndex + 1}/${totalFiles}: Initializing OCR...`);
+          setOcrProgress(20 + m.progress * 20);
+        } else if (m.status === 'loading language traineddata') {
+          setOcrStatus(`Image ${imageIndex + 1}/${totalFiles}: Loading language data...`);
+          setOcrProgress(40 + m.progress * 20);
+        } else if (m.status === 'initializing api') {
+          setOcrStatus(`Image ${imageIndex + 1}/${totalFiles}: Preparing OCR...`);
+          setOcrProgress(60 + m.progress * 10);
+        } else if (m.status === 'recognizing text') {
+          setOcrStatus(`Image ${imageIndex + 1}/${totalFiles}: Extracting text...`);
+          setOcrProgress(70 + m.progress * 30);
+        }
+      }
+    });
+    
+    // Perform OCR on the image
+    const { data: { text } } = await worker.recognize(file);
+    
+    // Terminate worker
+    await worker.terminate();
 
-    // Check if file is an image
-    if (!file.type.startsWith('image/')) {
+    return text;
+  };
+
+  const importTrackingFromPDF = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+    const validFiles = Array.from(files).filter(file => allowedTypes.includes(file.type));
+
+    if (validFiles.length === 0) {
       toast({
-        title: "Error",
-        description: "Please upload an image file (JPG, JPEG, PNG)",
-        variant: "destructive"
+        title: "Invalid file type",
+        description: "Please upload JPG or PNG images.",
+        variant: "destructive",
       });
       return;
     }
@@ -318,71 +354,56 @@ const OrderManagement = () => {
     try {
       // Show progress dialog
       setIsOcrProcessing(true);
+      setTotalImages(validFiles.length);
+      setCurrentImageIndex(0);
       setOcrProgress(0);
-      setOcrStatus("Initializing OCR...");
+      setOcrStatus("Starting batch processing...");
 
-      // Create Tesseract worker with progress callback
-      const worker = await createWorker('eng', 1, {
-        logger: (m) => {
-          if (m.status === 'loading tesseract core') {
-            setOcrStatus('Loading OCR engine...');
-            setOcrProgress(m.progress * 20);
-          } else if (m.status === 'initializing tesseract') {
-            setOcrStatus('Initializing OCR...');
-            setOcrProgress(20 + m.progress * 20);
-          } else if (m.status === 'loading language traineddata') {
-            setOcrStatus('Loading language data...');
-            setOcrProgress(40 + m.progress * 20);
-          } else if (m.status === 'initializing api') {
-            setOcrStatus('Preparing OCR...');
-            setOcrProgress(60 + m.progress * 10);
-          } else if (m.status === 'recognizing text') {
-            setOcrStatus('Extracting text from image...');
-            setOcrProgress(70 + m.progress * 30);
+      let allUpdates: { phone: string; tracking: string }[] = [];
+
+      // Process each image
+      for (let i = 0; i < validFiles.length; i++) {
+        setCurrentImageIndex(i);
+        setOcrProgress(0);
+        
+        const text = await processImageWithOCR(validFiles[i], i, validFiles.length);
+
+        // Extract tracking numbers and phone numbers using regex
+        const phonePattern = /0\d{9}/g;
+        const trackingPattern = /([A-Z0-9]{10,20})/g;
+        
+        // Parse line by line to match phone with tracking
+        const lines = text.split('\n');
+        
+        for (const line of lines) {
+          const phones = line.match(phonePattern);
+          const trackings = line.match(trackingPattern);
+          
+          if (phones && trackings) {
+            allUpdates.push({
+              phone: phones[0],
+              tracking: trackings[trackings.length - 1]
+            });
           }
         }
-      });
-      
-      // Perform OCR on the image
-      const { data: { text } } = await worker.recognize(file);
-      
-      // Terminate worker
-      await worker.terminate();
-
-      setOcrStatus("Processing extracted text...");
-      setOcrProgress(100);
-
-      // Extract tracking numbers and phone numbers using regex
-      const phonePattern = /0\d{9}/g;
-      const trackingPattern = /([A-Z0-9]{10,20})/g;
-      
-      // Parse line by line to match phone with tracking
-      const lines = text.split('\n');
-      const updates: { phone: string; tracking: string }[] = [];
-      
-      for (const line of lines) {
-        const phones = line.match(phonePattern);
-        const trackings = line.match(trackingPattern);
-        
-        if (phones && trackings) {
-          updates.push({
-            phone: phones[0],
-            tracking: trackings[trackings.length - 1]
-          });
-        }
       }
+
+      setOcrStatus("Processing all extracted data...");
+      setOcrProgress(100);
 
       // Close progress dialog
       setIsOcrProcessing(false);
 
-      if (updates.length === 0) {
+      if (allUpdates.length === 0) {
         toast({
           title: "No data found",
-          description: "Could not extract tracking numbers from image. Please check the format.",
+          description: `Could not extract tracking numbers from ${validFiles.length} image(s). Please check the format.`,
           variant: "destructive"
         });
         return;
       }
+
+      const updates = allUpdates;
 
       // Match orders and prepare preview
       const previewMatches: Array<{
@@ -426,7 +447,7 @@ const OrderManagement = () => {
       if (previewMatches.length === 0 && unmatched.length > 0) {
         toast({
           title: "No matches found",
-          description: `${unmatched.length} phone numbers in the image don't match any orders without tracking numbers.`,
+          description: `${unmatched.length} phone numbers don't match any orders without tracking numbers.`,
           variant: "destructive"
         });
         setUnmatchedEntries(unmatched);
@@ -589,7 +610,7 @@ const OrderManagement = () => {
           </Button>
           <Button variant="outline" onClick={() => document.getElementById('pdf-upload')?.click()}>
             <FileUp className="h-4 w-4 mr-2" />
-            Import Tracking (PDF)
+            Import Tracking (Images)
           </Button>
           <input
             id="csv-upload"
@@ -604,6 +625,7 @@ const OrderManagement = () => {
             accept=".jpg,.jpeg,.png,image/jpeg,image/png"
             style={{ display: 'none' }}
             onChange={importTrackingFromPDF}
+            multiple
           />
         </div>
       </div>
@@ -901,6 +923,13 @@ const OrderManagement = () => {
             <DialogTitle>Processing Image</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
+            {totalImages > 1 && (
+              <div className="text-center mb-2">
+                <p className="text-sm font-medium">
+                  Processing Image {currentImageIndex + 1} of {totalImages}
+                </p>
+              </div>
+            )}
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">{ocrStatus}</span>
@@ -909,7 +938,9 @@ const OrderManagement = () => {
               <Progress value={ocrProgress} className="h-2" />
             </div>
             <p className="text-sm text-muted-foreground">
-              Please wait while we extract text from your image...
+              {totalImages > 1 
+                ? `Please wait while we process ${totalImages} images...`
+                : "Please wait while we extract text from your image..."}
             </p>
           </div>
         </DialogContent>
