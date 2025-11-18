@@ -21,6 +21,7 @@ interface Product {
   stock_quantity: number;
   category: string;
   description?: string;
+  image_url?: string;
 }
 
 interface CartItem {
@@ -392,17 +393,35 @@ const EnhancedPOS = () => {
                   <Card key={product.id} className="cursor-pointer hover:shadow-md transition-shadow"
                         onClick={() => addToCart(product)}>
                     <CardContent className="p-4">
-                      <div className="flex justify-between items-start mb-2">
-                        <h3 className="font-semibold">{product.name}</h3>
-                        <Badge variant={product.stock_quantity > 10 ? "default" : product.stock_quantity > 0 ? "destructive" : "secondary"}>
-                          {product.stock_quantity} left
-                        </Badge>
+                      <div className="flex gap-3">
+                        {/* Product Image */}
+                        {product.image_url ? (
+                          <img 
+                            src={product.image_url} 
+                            alt={product.name}
+                            className="w-20 h-20 object-cover rounded-md shrink-0"
+                          />
+                        ) : (
+                          <div className="w-20 h-20 bg-muted rounded-md flex items-center justify-center shrink-0">
+                            <span className="text-xs text-muted-foreground">No image</span>
+                          </div>
+                        )}
+                        
+                        {/* Product Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between items-start mb-2">
+                            <h3 className="font-semibold truncate">{product.name}</h3>
+                            <Badge variant={product.stock_quantity > 10 ? "default" : product.stock_quantity > 0 ? "destructive" : "secondary"}>
+                              {product.stock_quantity} left
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground mb-2">{product.sku}</p>
+                          <p className="text-lg font-bold">฿{product.price}</p>
+                          {product.description && (
+                            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{product.description}</p>
+                          )}
+                        </div>
                       </div>
-                      <p className="text-sm text-muted-foreground mb-2">{product.sku}</p>
-                      <p className="text-lg font-bold">฿{product.price}</p>
-                      {product.description && (
-                        <p className="text-xs text-muted-foreground mt-1">{product.description}</p>
-                      )}
                     </CardContent>
                   </Card>
                 ))}

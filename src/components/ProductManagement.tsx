@@ -30,8 +30,11 @@ const ProductManagement = () => {
     price: "",
     category: "",
     stock_quantity: "",
-    status: "active"
+    status: "active",
+    image_url: ""
   });
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -56,6 +59,36 @@ const ProductManagement = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const uploadImage = async (file: File): Promise<string | null> => {
+    try {
+      setIsUploadingImage(true);
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('product-images')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('product-images')
+        .getPublicUrl(filePath);
+
+      return publicUrl;
+    } catch (error) {
+      toast({
+        title: "Upload Failed",
+        description: "Failed to upload image",
+        variant: "destructive"
+      });
+      return null;
+    } finally {
+      setIsUploadingImage(false);
     }
   };
 
@@ -219,8 +252,10 @@ const ProductManagement = () => {
       price: product.price.toString(),
       category: product.category || "",
       stock_quantity: product.stock_quantity.toString(),
-      status: product.status
+      status: product.status,
+      image_url: product.image_url || ""
     });
+    setImageFile(null);
     setIsEditDialogOpen(true);
   };
 
@@ -239,6 +274,15 @@ const ProductManagement = () => {
         return;
       }
 
+      // Upload image if new file selected
+      let imageUrl = formData.image_url;
+      if (imageFile) {
+        const uploadedUrl = await uploadImage(imageFile);
+        if (uploadedUrl) {
+          imageUrl = uploadedUrl;
+        }
+      }
+
       const { error } = await supabase
         .from('products')
         .update({
@@ -248,7 +292,8 @@ const ProductManagement = () => {
           price: parseFloat(validationResult.data.price),
           category: validationResult.data.category || null,
           stock_quantity: parseInt(validationResult.data.stock_quantity),
-          status: validationResult.data.status
+          status: validationResult.data.status,
+          image_url: imageUrl || null
         })
         .eq('id', editingProduct.id);
 
@@ -268,8 +313,10 @@ const ProductManagement = () => {
         price: "",
         category: "",
         stock_quantity: "",
-        status: "active"
+        status: "active",
+        image_url: ""
       });
+      setImageFile(null);
       fetchProducts();
     } catch (error) {
       toast({
@@ -293,6 +340,12 @@ const ProductManagement = () => {
         return;
       }
 
+      // Upload image if file selected
+      let imageUrl = null;
+      if (imageFile) {
+        imageUrl = await uploadImage(imageFile);
+      }
+
       const { error } = await supabase
         .from('products')
         .insert([{
@@ -302,7 +355,8 @@ const ProductManagement = () => {
           price: parseFloat(validationResult.data.price),
           category: validationResult.data.category || null,
           stock_quantity: parseInt(validationResult.data.stock_quantity),
-          status: validationResult.data.status
+          status: validationResult.data.status,
+          image_url: imageUrl
         }]);
 
       if (error) throw error;
@@ -320,8 +374,10 @@ const ProductManagement = () => {
         price: "",
         category: "",
         stock_quantity: "",
-        status: "active"
+        status: "active",
+        image_url: ""
       });
+      setImageFile(null);
       fetchProducts();
     } catch (error: any) {
       let errorMessage = "Failed to add product";
@@ -475,6 +531,24 @@ const ProductManagement = () => {
                         </SelectContent>
                       </Select>
                     </div>
+                    <div>
+                      <Label htmlFor="add-image">Product Image</Label>
+                      <Input 
+                        id="add-image" 
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+                        disabled={isUploadingImage}
+                      />
+                      {imageFile && (
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Selected: {imageFile.name}
+                        </p>
+                      )}
+                      {isUploadingImage && (
+                        <p className="text-sm text-primary mt-1">Uploading image...</p>
+                      )}
+                    </div>
                   </div>
                   <DialogFooter className="gap-2">
                     <Button 
@@ -512,6 +586,7 @@ const ProductManagement = () => {
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50">
+                  <TableHead>Image</TableHead>
                   <TableHead>SKU</TableHead>
                   <TableHead>Product Name</TableHead>
                   <TableHead>Price</TableHead>
@@ -523,6 +598,19 @@ const ProductManagement = () => {
               <TableBody>
                 {paginatedProducts.map((product) => (
                   <TableRow key={product.id} className="hover:bg-muted/30 transition-colors">
+                    <TableCell>
+                      {product.image_url ? (
+                        <img 
+                          src={product.image_url} 
+                          alt={product.name}
+                          className="w-12 h-12 object-cover rounded"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 bg-muted rounded flex items-center justify-center">
+                          <span className="text-xs text-muted-foreground">No img</span>
+                        </div>
+                      )}
+                    </TableCell>
                     <TableCell className="font-medium">{product.sku}</TableCell>
                     <TableCell>{product.name}</TableCell>
                     <TableCell>฿{product.price}</TableCell>
@@ -658,6 +746,34 @@ const ProductManagement = () => {
                   <SelectItem value="inactive">Inactive</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div>
+              <Label htmlFor="edit-image">Product Image</Label>
+              {formData.image_url && !imageFile && (
+                <div className="mb-2">
+                  <img 
+                    src={formData.image_url} 
+                    alt="Current product" 
+                    className="w-32 h-32 object-cover rounded-md"
+                  />
+                  <p className="text-sm text-muted-foreground mt-1">Current image</p>
+                </div>
+              )}
+              <Input 
+                id="edit-image" 
+                type="file"
+                accept="image/*"
+                onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+                disabled={isUploadingImage}
+              />
+              {imageFile && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  New image: {imageFile.name}
+                </p>
+              )}
+              {isUploadingImage && (
+                <p className="text-sm text-primary mt-1">Uploading image...</p>
+              )}
             </div>
           </div>
           <DialogFooter className="gap-2">
