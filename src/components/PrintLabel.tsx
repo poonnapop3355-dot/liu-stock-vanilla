@@ -321,7 +321,8 @@ const PrintLabel = () => {
           overflow: hidden;
           font-size: 10px; /* reset font size for children */
         }
-        .label:nth-child(2n) {
+        /* Target only label elements for nth-child to avoid page-break interference */
+        .label:nth-of-type(2n) {
           margin-right: 0;
         }
         .label-header {
@@ -407,10 +408,14 @@ const PrintLabel = () => {
           text-align: right;
         }
         .page-break {
+          page-break-before: always;
           break-before: page;
+          clear: both;
           width: 100%;
           height: 0;
           display: block;
+          margin: 0;
+          padding: 0;
         }
         @media print {
           .no-print {
