@@ -277,9 +277,9 @@ const PrintLabel = () => {
         return {
           labelsPerRow: 2,
           labelsPerPage: 6,
-          labelWidth: 'calc(50% - 0.15cm)',
-          labelHeight: `${8.5 * sizeMultiplier}cm`,
-          margin: '0 0.15cm 0.15cm 0',
+          labelWidth: 'calc(50% - 0.1cm)',
+          labelHeight: `${8.2 * sizeMultiplier}cm`,
+          margin: '0 0.1cm 0.1cm 0',
           pageSize: paper,
           pageMargin: paper === "A5" ? "0.25cm" : "0.4cm"
         };
@@ -313,7 +313,7 @@ const PrintLabel = () => {
           width: ${labelWidth};
           height: ${labelHeight};
           border: 1px solid #333;
-          padding: 0.15cm;
+          padding: 0.12cm;
           margin: ${margin};
           box-sizing: border-box;
           page-break-inside: avoid;
@@ -353,7 +353,7 @@ const PrintLabel = () => {
           line-height: 1.15;
           padding: 0.06cm;
           border: 1px solid #333;
-          height: 1cm;
+          height: 0.9cm;
           word-wrap: break-word;
           overflow-wrap: break-word;
           hyphens: auto;
@@ -383,7 +383,7 @@ const PrintLabel = () => {
           border: 1px solid #333;
           padding: 0.08cm;
           background-color: white;
-          min-height: 2.2cm;
+          min-height: 2.0cm;
           word-wrap: break-word;
           overflow-wrap: break-word;
           overflow: hidden;
