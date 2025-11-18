@@ -78,6 +78,12 @@ const OrderManagement = () => {
   const [ocrStatus, setOcrStatus] = useState("");
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [totalImages, setTotalImages] = useState(0);
+  const [imageResults, setImageResults] = useState<Array<{
+    fileName: string;
+    trackingCount: number;
+    trackingNumbers: string[];
+  }>>([]);
+  const [showResultsSummary, setShowResultsSummary] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -360,6 +366,11 @@ const OrderManagement = () => {
       setOcrStatus("Starting batch processing...");
 
       let allUpdates: { phone: string; tracking: string }[] = [];
+      const results: Array<{
+        fileName: string;
+        trackingCount: number;
+        trackingNumbers: string[];
+      }> = [];
 
       // Process each image
       for (let i = 0; i < validFiles.length; i++) {
@@ -374,25 +385,41 @@ const OrderManagement = () => {
         
         // Parse line by line to match phone with tracking
         const lines = text.split('\n');
+        const imageTrackingNumbers: string[] = [];
         
         for (const line of lines) {
           const phones = line.match(phonePattern);
           const trackings = line.match(trackingPattern);
           
           if (phones && trackings) {
+            const trackingNumber = trackings[trackings.length - 1];
             allUpdates.push({
               phone: phones[0],
-              tracking: trackings[trackings.length - 1]
+              tracking: trackingNumber
             });
+            imageTrackingNumbers.push(trackingNumber);
           }
         }
+
+        // Store results for this image
+        results.push({
+          fileName: validFiles[i].name,
+          trackingCount: imageTrackingNumbers.length,
+          trackingNumbers: imageTrackingNumbers
+        });
       }
+
+      // Store results for summary
+      setImageResults(results);
 
       setOcrStatus("Processing all extracted data...");
       setOcrProgress(100);
 
       // Close progress dialog
       setIsOcrProcessing(false);
+
+      // Show results summary
+      setShowResultsSummary(true);
 
       if (allUpdates.length === 0) {
         toast({
@@ -942,6 +969,81 @@ const OrderManagement = () => {
                 ? `Please wait while we process ${totalImages} images...`
                 : "Please wait while we extract text from your image..."}
             </p>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* OCR Results Summary Dialog */}
+      <Dialog open={showResultsSummary} onOpenChange={setShowResultsSummary}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>
+              Batch Processing Results - {imageResults.length} Image{imageResults.length !== 1 ? 's' : ''} Processed
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-auto space-y-4 py-4">
+            <div className="bg-primary/10 p-4 rounded-lg border border-primary/20">
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="text-sm font-medium">Total Images Processed</p>
+                  <p className="text-2xl font-bold text-primary">{imageResults.length}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Total Tracking Numbers Found</p>
+                  <p className="text-2xl font-bold text-primary">
+                    {imageResults.reduce((sum, result) => sum + result.trackingCount, 0)}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold">Details by Image</h3>
+              {imageResults.map((result, index) => (
+                <div 
+                  key={index} 
+                  className="border rounded-lg p-4 space-y-2 bg-card hover:bg-accent/5 transition-colors"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <p className="font-medium text-sm truncate" title={result.fileName}>
+                        {result.fileName}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {result.trackingCount} tracking number{result.trackingCount !== 1 ? 's' : ''} found
+                      </p>
+                    </div>
+                    <Badge 
+                      variant={result.trackingCount > 0 ? "default" : "secondary"}
+                      className="ml-2 shrink-0"
+                    >
+                      {result.trackingCount}
+                    </Badge>
+                  </div>
+                  
+                  {result.trackingNumbers.length > 0 && (
+                    <div className="mt-2 pt-2 border-t">
+                      <p className="text-xs text-muted-foreground mb-1">Tracking Numbers:</p>
+                      <div className="flex flex-wrap gap-1">
+                        {result.trackingNumbers.map((tracking, idx) => (
+                          <Badge key={idx} variant="outline" className="text-xs font-mono">
+                            {tracking}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="pt-4 border-t">
+            <Button 
+              onClick={() => setShowResultsSummary(false)} 
+              className="w-full"
+            >
+              Continue to Import Preview
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
